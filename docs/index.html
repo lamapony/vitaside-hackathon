@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="VitaSide is a local, temporary AI sidecar protocol for personal health pattern intelligence."
+    >
+    <title>VitaSide - Local Health Intelligence Sidecars</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #132226;
+        --muted: #596b70;
+        --line: #d8e5e3;
+        --paper: #f7fbfa;
+        --white: #ffffff;
+        --teal: #0f7c7c;
+        --teal-dark: #0a5558;
+        --mint: #d7f1eb;
+        --coral: #d96d53;
+        --gold: #c4953f;
+        --graphite: #233236;
+        --shadow: 0 18px 54px rgba(21, 46, 49, 0.16);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        min-height: 92vh;
+        display: grid;
+        align-items: stretch;
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(90deg, rgba(247, 251, 250, 0.97) 0%, rgba(247, 251, 250, 0.9) 38%, rgba(247, 251, 250, 0.34) 70%),
+          linear-gradient(180deg, rgba(247, 251, 250, 0.18), rgba(247, 251, 250, 0.98)),
+          url("assets/vitaside-hero.png") center right / cover no-repeat;
+      }
+
+      .nav {
+        position: absolute;
+        inset: 0 0 auto;
+        z-index: 2;
+        padding: 22px 0;
+      }
+
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 1.02rem;
+      }
+
+      .brand-mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        background:
+          linear-gradient(135deg, var(--teal), #42a891 54%, var(--coral));
+        box-shadow: 0 8px 22px rgba(15, 124, 124, 0.25);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        color: #31494e;
+        font-size: 0.94rem;
+        font-weight: 650;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+      }
+
+      .hero-content {
+        padding: 112px 0 78px;
+        align-self: center;
+        position: relative;
+        z-index: 1;
+      }
+
+      .eyebrow {
+        width: fit-content;
+        border: 1px solid rgba(15, 124, 124, 0.22);
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--teal-dark);
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        font-weight: 780;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin-top: 22px;
+        font-size: clamp(3.15rem, 8vw, 6.9rem);
+        line-height: 0.89;
+        letter-spacing: 0;
+      }
+
+      .hero-copy {
+        max-width: 650px;
+        margin-top: 28px;
+        font-size: clamp(1.08rem, 1.8vw, 1.34rem);
+        line-height: 1.55;
+        color: #304348;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 13px;
+        margin-top: 34px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        border-radius: 8px;
+        padding: 0 20px;
+        font-weight: 760;
+        text-decoration: none;
+        border: 1px solid transparent;
+      }
+
+      .button.primary {
+        background: var(--teal);
+        color: var(--white);
+        box-shadow: 0 12px 28px rgba(15, 124, 124, 0.24);
+      }
+
+      .button.secondary {
+        background: rgba(255, 255, 255, 0.78);
+        border-color: rgba(19, 34, 38, 0.15);
+        color: var(--ink);
+      }
+
+      .signal-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 48px;
+        max-width: 720px;
+      }
+
+      .signal {
+        min-height: 106px;
+        padding: 17px;
+        border: 1px solid rgba(19, 34, 38, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 10px 34px rgba(28, 58, 62, 0.1);
+      }
+
+      .signal b {
+        display: block;
+        font-size: 1.45rem;
+        line-height: 1;
+      }
+
+      .signal span {
+        display: block;
+        margin-top: 9px;
+        color: var(--muted);
+        line-height: 1.36;
+        font-size: 0.93rem;
+      }
+
+      section {
+        padding: 74px 0;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 0.82fr) minmax(260px, 0.48fr);
+        gap: 38px;
+        align-items: end;
+        margin-bottom: 34px;
+      }
+
+      h2 {
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        line-height: 1.02;
+        letter-spacing: 0;
+      }
+
+      .section-head p,
+      .wide-copy {
+        color: var(--muted);
+        line-height: 1.65;
+        font-size: 1.02rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--white);
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(24, 53, 56, 0.08);
+      }
+
+      .card h3 {
+        font-size: 1.14rem;
+        line-height: 1.25;
+      }
+
+      .card p {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.58;
+      }
+
+      .demo {
+        background: #eef6f4;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .demo-layout {
+        display: grid;
+        grid-template-columns: 0.86fr 1.14fr;
+        gap: 28px;
+        align-items: start;
+      }
+
+      .terminal {
+        border-radius: 8px;
+        background: #152326;
+        color: #d9f3ec;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .terminal-top {
+        display: flex;
+        gap: 7px;
+        padding: 14px 16px;
+        background: #203236;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--coral);
+      }
+
+      .dot:nth-child(2) {
+        background: var(--gold);
+      }
+
+      .dot:nth-child(3) {
+        background: #49b08d;
+      }
+
+      pre {
+        margin: 0;
+        padding: 22px;
+        white-space: pre-wrap;
+        font: 0.91rem/1.58 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 13px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 14px;
+        align-items: center;
+      }
+
+      .row-label {
+        color: #40565b;
+        font-weight: 730;
+        font-size: 0.92rem;
+      }
+
+      .bar-track {
+        height: 18px;
+        border-radius: 5px;
+        background: #dce8e5;
+        overflow: hidden;
+      }
+
+      .bar {
+        height: 100%;
+        border-radius: 5px;
+        background: var(--teal);
+      }
+
+      .bar.coral {
+        background: var(--coral);
+      }
+
+      .bar.gold {
+        background: var(--gold);
+      }
+
+      .quote {
+        margin-top: 20px;
+        padding-left: 18px;
+        border-left: 3px solid var(--teal);
+        color: #40565b;
+        line-height: 1.55;
+      }
+
+      .protocol {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+
+      .step-number {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: var(--mint);
+        color: var(--teal-dark);
+        font-weight: 850;
+      }
+
+      .footer {
+        padding: 38px 0;
+        color: #577078;
+        border-top: 1px solid var(--line);
+      }
+
+      .footer-inner {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 820px) {
+        .shell {
+          width: min(100% - 28px, 680px);
+        }
+
+        .hero {
+          min-height: auto;
+          background:
+            linear-gradient(180deg, rgba(247, 251, 250, 0.96) 0%, rgba(247, 251, 250, 0.84) 48%, rgba(247, 251, 250, 0.98) 100%),
+            url("assets/vitaside-hero.png") center top / cover no-repeat;
+        }
+
+        .nav {
+          position: static;
+        }
+
+        .nav-inner {
+          align-items: flex-start;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .hero-content {
+          padding: 48px 0 54px;
+        }
+
+        h1 {
+          font-size: clamp(3rem, 16vw, 5rem);
+        }
+
+        .signal-strip,
+        .grid-3,
+        .protocol,
+        .demo-layout,
+        .section-head {
+          grid-template-columns: 1fr;
+        }
+
+        .signal-strip {
+          margin-top: 34px;
+        }
+
+        section {
+          padding: 54px 0;
+        }
+
+        .row {
+          grid-template-columns: 76px 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <nav class="nav" aria-label="Primary navigation">
+          <div class="shell nav-inner">
+            <a class="brand" href="#top" aria-label="VitaSide home">
+              <span class="brand-mark" aria-hidden="true"></span>
+              <span>VitaSide</span>
+            </a>
+            <div class="nav-links">
+              <a href="#why">Why</a>
+              <a href="#demo">Demo</a>
+              <a href="#protocol">Protocol</a>
+              <a href="#build">Build</a>
+            </div>
+          </div>
+        </nav>
+
+        <div class="shell hero-content" id="top">
+          <div class="eyebrow">Hackathon reference implementation</div>
+          <h1>VitaSide</h1>
+          <p class="hero-copy">
+            A temporary local AI sidecar that turns Omi notes, Apple Health signals, and
+            journals into explainable lifestyle patterns, what-if simulations, and
+            doctor-ready reports.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="#demo">See the demo flow</a>
+            <a class="button secondary" href="https://github.com/lamapony/vitaside-hackathon">Open the repo</a>
+          </div>
+          <div class="signal-strip" aria-label="Product highlights">
+            <div class="signal">
+              <b>Local</b>
+              <span>No cloud sync by default. Personal health data stays on the user's device.</span>
+            </div>
+            <div class="signal">
+              <b>Scoped</b>
+              <span>Read-only access is issued through a manifest with TTL and audit logs.</span>
+            </div>
+            <div class="signal">
+              <b>Useful</b>
+              <span>Patterns, lagged correlations, anomalies, and simulations for better visits.</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="why">
+        <div class="shell">
+          <div class="section-head">
+            <h2>Doctors see snapshots. VitaSide reconstructs the weeks between them.</h2>
+            <p>
+              Wearables show numbers, journals hold context, and voice notes capture lived
+              reality. VitaSide connects those streams locally so a patient can walk into an
+              appointment with specific observations instead of vague memory.
+            </p>
+          </div>
+          <div class="grid-3">
+            <article class="card">
+              <h3>Voice becomes signal</h3>
+              <p>
+                Omi and journal notes are parsed into dated signals for sleep, stress, food,
+                mood, activity, and symptoms.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Biometrics get context</h3>
+              <p>
+                Sleep, HRV, steps, SpO2, and other Apple Health metrics are compared against
+                the user's own baseline.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Reports stay grounded</h3>
+              <p>
+                Every insight includes confidence, citations, and a clear disclaimer: this is
+                self-observation, not diagnosis.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo" id="demo">
+        <div class="shell">
+          <div class="section-head">
+            <h2>The demo ships as a real MCP sidecar.</h2>
+            <p>
+              The current implementation runs a local Python MCP server, analyzes demo or
+              real user data, produces a what-if simulation, and exports an HTML report.
+            </p>
+          </div>
+          <div class="demo-layout">
+            <div class="terminal" aria-label="Demo commands">
+              <div class="terminal-top" aria-hidden="true">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+              <pre>cd code/health-mcp-starter
+pip install -r requirements.txt
+./run-demo.sh
+
+# Full judge flow:
+# self-test -> pattern analysis -> what-if simulation -> report</pre>
+            </div>
+            <article class="card">
+              <h3>Doctor-ready pattern output</h3>
+              <div class="timeline" aria-label="Example timeline visualization">
+                <div class="row">
+                  <div class="row-label">Sleep</div>
+                  <div class="bar-track"><div class="bar" style="width: 78%"></div></div>
+                </div>
+                <div class="row">
+                  <div class="row-label">Stress</div>
+                  <div class="bar-track"><div class="bar coral" style="width: 54%"></div></div>
+                </div>
+                <div class="row">
+                  <div class="row-label">HRV</div>
+                  <div class="bar-track"><div class="bar gold" style="width: 66%"></div></div>
+                </div>
+                <div class="row">
+                  <div class="row-label">Mood</div>
+                  <div class="bar-track"><div class="bar" style="width: 72%"></div></div>
+                </div>
+              </div>
+              <p class="quote">
+                "On high-stress days followed by short sleep, fatigue mentions increase in
+                the next 48 hours. Confidence: medium. Sources: Omi excerpts and Apple Health
+                sleep records."
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="protocol">
+        <div class="shell">
+          <div class="section-head">
+            <h2>A small protocol for safe expert intelligence injection.</h2>
+            <p>
+              VitaSide is not another health app. It is a sidecar pattern: a specialist agent
+              issued for a limited purpose, loaded by a personal AI host, and revoked when its
+              job is done.
+            </p>
+          </div>
+          <div class="protocol">
+            <article class="card step">
+              <div class="step-number">1</div>
+              <div>
+                <h3>Issue</h3>
+                <p>A doctor or template creates a manifest for a specialist sidecar.</p>
+              </div>
+            </article>
+            <article class="card step">
+              <div class="step-number">2</div>
+              <div>
+                <h3>Scope</h3>
+                <p>The user grants read-only access to approved local folders and exports.</p>
+              </div>
+            </article>
+            <article class="card step">
+              <div class="step-number">3</div>
+              <div>
+                <h3>Analyze</h3>
+                <p>The sidecar exposes MCP tools for correlations, anomalies, and simulations.</p>
+              </div>
+            </article>
+            <article class="card step">
+              <div class="step-number">4</div>
+              <div>
+                <h3>Expire</h3>
+                <p>TTL, audit logs, and local execution keep control with the patient.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="build">
+        <div class="shell">
+          <div class="section-head">
+            <h2>Built for a credible hackathon demo, not a mockup.</h2>
+            <p>
+              The repository includes the MCP server, demo data generation, report rendering,
+              a sidecar protocol wrapper, quality gates, and a live script for judges.
+            </p>
+          </div>
+          <div class="grid-3">
+            <article class="card">
+              <h3>MCP-native tools</h3>
+              <p>
+                `analyze_lifestyle_patterns`, `simulate_whatif`, `generate_doctor_report`,
+                `find_correlation`, and source inspection tools.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Local safety model</h3>
+              <p>
+                Manifest scopes, TTL checks, audit trail, no network dependency, and safe
+                fallback to generated demo data.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Pitch-ready output</h3>
+              <p>
+                A 6-8 minute story: issue sidecar, analyze patterns, run what-if, export the
+                report, and explain the extensible protocol.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell footer-inner">
+        <span>VitaSide - personal pattern intelligence for self-observation.</span>
+        <span>Local-first. Temporary. Audited.</span>
+      </div>
+    </footer>
+  </body>
+</html>

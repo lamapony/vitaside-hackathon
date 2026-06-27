@@ -21,3 +21,4 @@ code/health-mcp-starter/demo-data/
 code/health-mcp-starter/out/
 code/health-mcp-starter/audit.log
 code/health-mcp-starter/sidecars/*/manifest.yaml
+.codebase-memory/

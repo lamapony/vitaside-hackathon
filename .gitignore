@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Health data exports (never commit personal data)
+*apple_health_export*/
+export.xml
+*.audit.log
+audit.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Generated demo vault (regenerate with gen_demo_data.py)
+code/health-mcp-starter/demo-data/

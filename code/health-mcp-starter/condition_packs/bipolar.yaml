@@ -1,0 +1,54 @@
+# Bipolar-relevant self-monitoring (NOT episode diagnosis)
+id: bipolar
+name: "Bipolar — mood, sleep & rhythm monitoring"
+description: >
+  Track mood polarity, sleep, energy, irritability, and medication mentions
+  for discussion with your psychiatrist. Patterns only — not a diagnostic tool.
+disclaimer: >
+  Self-monitoring aid for mood and sleep rhythm. Does not detect or label
+  manic, hypomanic, or depressive episodes. Share reports with your care team.
+
+signals:
+  mood_elevated:
+    keywords: '\b(эйфор|прилив сил|не могу уснуть от идей|гипоман|manic|mania|слишком много энерг|не нужен сон|grandio|на взводе|скачу|беспокойн.*энерг)\b'
+    weight: 1.2
+  irritability:
+    keywords: '\b(раздражител|срыва[юсь]|злюсь|ярость|irritab|вспыльчив|нервнича[юе])\b'
+    weight: 1.0
+  medication_mood:
+    keywords: '\b(литий|lamotrigine|ламотриджин|valpro|вальпро|quetiapine|кветиапин|lithium|принял таблет|выпил лекарств|antidepress|антидепресс)\b'
+    weight: 1.1
+  sleep_reduced:
+    keywords: '\b(почти не спал но бодр|3 часа сна|мало спал.*энерг|reduced sleep|мало спал.*бодр)\b'
+    weight: 1.2
+
+track_items:
+  - id: mood
+    label: "Mood (low / elevated / stable)"
+    signals: [mood_low, mood_good, mood_elevated]
+  - id: sleep
+    label: "Sleep duration & quality"
+    signals: [sleep, sleep_reduced]
+    apple_metrics: [sleep_hours]
+  - id: energy
+    label: "Energy & activation"
+    signals: [mood_good, mood_elevated, exercise, mood_low]
+  - id: irritability
+    label: "Irritability"
+    signals: [irritability, stress]
+  - id: medication
+    label: "Medication mentions"
+    signals: [medication_mood]
+
+metrics:
+  - id: mood_volatility
+    label: "Mood polarity changes (7-day windows)"
+  - id: reduced_sleep_with_energy
+    label: "Reduced sleep + high energy same day (discussion flag)"
+  - id: medication_logging
+    label: "Days with medication mentions in notes"
+
+doctor_focus:
+  - "Sleep–mood rhythm over the last weeks"
+  - "Any weeks with both elevated mood signals and reduced sleep"
+  - "Medication adherence mentions in voice notes"

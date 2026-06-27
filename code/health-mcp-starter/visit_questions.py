@@ -1,7 +1,7 @@
 """Auto-generate doctor visit questions from YOUR cited patterns."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from actionable_insights import _label
 
@@ -10,6 +10,7 @@ def generate_visit_questions(
     analysis: Dict[str, Any],
     merge: Dict[str, Any],
     whatif: Dict[str, Any],
+    smart: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     questions: List[Dict[str, str]] = []
     days = analysis.get("unique_dates", 0)
@@ -62,6 +63,28 @@ def generate_visit_questions(
             "evidence": "",
             "evidence_date": "",
         })
+
+    if smart:
+        for att in (smart.get("attention_now") or [])[:2]:
+            questions.append({
+                "topic": "personal baseline",
+                "question": (
+                    f"My recent data shows: {att.get('headline', '')}. "
+                    f"{att.get('detail', '')} Is this worth monitoring?"
+                ),
+                "evidence": (att.get("evidence_quote") or "")[:100],
+                "evidence_date": att.get("evidence_date", ""),
+            })
+        for w in (smart.get("weekday_effects") or [])[:1]:
+            questions.append({
+                "topic": "weekday pattern",
+                "question": (
+                    f"I notice {_label(w['signal'])} more on {w['weekday_name']}s "
+                    f"({w['lift']:.1f}× my average). Could weekday rhythm affect this?"
+                ),
+                "evidence": f"{w['occurrences']} {w['weekday_name']} occurrences",
+                "evidence_date": (w.get("example_dates") or [""])[0],
+            })
 
     return {
         "questions": questions,

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/venv-python.sh"
 export OMI_VAULT_PATH="${OMI_VAULT_PATH:-$ROOT/demo-data/vault}"
 export VITASIDE_MANIFEST="${VITASIDE_MANIFEST:-$ROOT/sidecars/sleep-stress-sidecar/manifest.yaml}"
 ANON_FLAG="False"
 [[ "${1:-}" == "--anon" ]] && ANON_FLAG="True"
 cd "$ROOT"
-python3 -c "
+"$PYTHON" -c "
 import importlib.util, json
 from pathlib import Path
 spec = importlib.util.spec_from_file_location('m', Path('health-pattern-mcp.py'))

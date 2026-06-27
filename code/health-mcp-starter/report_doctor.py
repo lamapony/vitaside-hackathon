@@ -16,10 +16,12 @@ def generate_doctor_view(
     whatif: Dict[str, Any],
     disclaimer: str,
     brief: Dict[str, Any] | None = None,
+    clinical: Dict[str, Any] | None = None,
 ) -> str:
     today = datetime.date.today().isoformat()
     brief = brief or {}
-    one_liner = brief.get("one_liner", "")
+    clinical = clinical or {}
+    one_liner = clinical.get("headline") or brief.get("one_liner", "")
     patterns = analysis.get("temporal_correlations", [])[:4]
     pattern_rows = "".join(
         f"<tr><td>{_e(c.get('cause'))}→{_e(c.get('effect'))}</td>"
@@ -36,6 +38,17 @@ def generate_doctor_view(
         f"<li>{_e(p.get('signal'))}: {_e(p.get('change_percent'))}% {_e(p.get('direction'))}</li>"
         for p in whatif.get("projected_outcomes", [])
     ) or "<li>Run what-if simulation for projections.</li>"
+
+    problem_rows = "".join(f"<li>{_e(p)}</li>" for p in clinical.get("problem_list") or []) or "<li>Not entered in VitaSide context</li>"
+    med_rows = "".join(f"<li>{_e(m)}</li>" for m in clinical.get("medications") or []) or "<li>None entered</li>"
+    trend_rows = "".join(
+        f"<tr><td>{_e(t.get('label'))}</td><td>{_e(t.get('recent_14d'))}</td>"
+        f"<td>{_e(t.get('prior_14d'))}</td><td>{_e(t.get('delta'))}</td>"
+        f"<td>{_e(t.get('direction'))}</td></tr>"
+        for t in (clinical.get("trends") or [])
+    )
+    flag_rows = "".join(f"<li>{_e(f)}</li>" for f in clinical.get("flags_for_review") or [])
+    q_rows = "".join(f"<li>{_e(q)}</li>" for q in clinical.get("visit_questions") or [])
 
     return f"""<!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8"/>
@@ -57,6 +70,17 @@ th{{background:#f1f5f9}}
 <strong>Not a diagnosis</strong></p>
 {f'<p class="one-liner"><strong>Headline:</strong> {_e(one_liner)}</p>' if one_liner else ''}
 
+<div class="section"><h2>Problem list &amp; medications (patient-entered)</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div><h3>Conditions</h3><ul>{problem_rows}</ul></div>
+<div><h3>Medications</h3><ul>{med_rows}</ul></div>
+</div></div>
+
+<div class="section"><h2>14-day trends vs prior 14 days</h2>
+<table><tr><th>Signal</th><th>Recent</th><th>Prior</th><th>Delta</th><th>Trend</th></tr>
+{trend_rows or '<tr><td colspan="5">Need ≥28 days for period comparison</td></tr>'}
+</table></div>
+
 <div class="section"><h2>Key Cross-Day Patterns</h2>
 <table><tr><th>Pattern</th><th>Lag</th><th>Lift</th><th>Conf.</th><th>Example note</th></tr>
 {pattern_rows or '<tr><td colspan="5">No patterns</td></tr>'}
@@ -67,6 +91,9 @@ th{{background:#f1f5f9}}
 
 <div class="section"><h2>What-If (patient scenario)</h2><ul>{whatif_rows}</ul>
 <p class="meta">Confidence: {whatif.get('confidence', '—')}</p></div>
+
+{f'<div class="section"><h2>Flags for review</h2><ul>{flag_rows}</ul></div>' if flag_rows else ''}
+{f'<div class="section"><h2>Suggested visit questions</h2><ul>{q_rows}</ul></div>' if q_rows else ''}
 
 <div class="disclaimer">{_e(disclaimer)}</div>
 </body></html>"""

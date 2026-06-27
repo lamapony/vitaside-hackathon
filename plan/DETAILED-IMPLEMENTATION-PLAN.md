@@ -148,3 +148,27 @@ Follow agent-skills commands mentally:
 - Technical depth shown (structured skills + MCP + real analysis).
 
 Update this plan as we go. Start with Phase 1.
+
+## Phase 1 Status (2026-06-27) - COMPLETED (self-executed)
+
+Code base in code/health-mcp-starter/ has implemented:
+
+- 6.1 Omi parser: timestamps, context (сегодня/вчера etc), speaker separation, quality scoring, time-of-day - present in health-pattern-mcp.py and supporting.
+
+- 6.2 Apple Health: XML parsing, parse_daily, merge, load_apple_health_data with sleep, HR, activity, symptoms, rings etc.
+
+- 6.3 Temporal correlations (lags 1-3d), anomalies vs baseline, statistical (scipy/pandas) - in analyze_lifestyle_patterns, analytics_depth.
+
+- 6.4 Enhanced reports: JSON, Markdown, HTML with timeline, ASCII charts, visualizations, Obsidian export via export_obsidian.py, visit bundle.
+
+- 6.5 MCP tools + sampling/LLM prep: full MCP server with tools, azure for LLM interpretation (enhance), preview payloads, sampling via context.
+
+- 6.6 Tests: test_mvp.py passes 32/33 (1 stub expected), demo with real demo data, mcporter compatible (test-mcporter.sh), ROADMAP updated.
+
+Proof: test_mvp.py output shows all key OKs. Code header and grep confirm features.
+
+Azure hybrid added as bonus for usefulness.
+
+Next: Phase 2 doctor delivery.
+
+

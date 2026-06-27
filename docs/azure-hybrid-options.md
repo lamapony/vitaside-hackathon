@@ -1,5 +1,7 @@
 # Azure Services for VitaSide — Hybrid Options to Make the Project More Useful
 
+> **Implementation contract (for Azure agent):** see [`AZURE-CONTRACT.md`](./AZURE-CONTRACT.md) and modules `azure_contract.py` / `azure_boost.py`.
+
 **Context**: VitaSide is deliberately **local-first, privacy-first, temporary sidecar**. Raw health data (Omi transcripts, Apple Health) never leaves the user's machine by default.
 
 **Goal of Azure integration**: Make the project *more useful* without breaking core principles. Use Azure for:

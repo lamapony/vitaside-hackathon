@@ -6,21 +6,33 @@
 
 Shows **actionable briefing** — dated citations, not generic LLM advice.
 
+**Dashboard demo (second screen):** `./scripts/vitaside serve-ui` from repo root (or `./serve-ui.sh` in `code/health-mcp-starter`) — Command center shows **sidecar expiry**; **Data sources** tab lists Omi/Apple scopes; **Doctor handoff** tab exports visit bundle + questions.
+
 ---
 
-## The "why not ChatGPT?" line (memorize)
+## The "why not ChatGPT?" line (memorize — verify with `./scripts/vitaside preflight`)
 
-> "ChatGPT can tell you sleep affects mood. VitaSide shows that **on March 31** you wrote *«Опять перегруз…»* and your **own 86 days** of notes show mood_low→stress with **2.2× lift** — with an audit log of every file read. That's not a chatbot guess."
+> "ChatGPT can tell you pain affects mood. VitaSide shows that **on March 31** you wrote *«Грустно и тяжело, день прошёл уныло»* and your **own 83 days** of notes show pain→low mood with **~2× lift** — with an audit log of every file read. That's not a chatbot guess."
+
+**What-if line:** sleep stabilization → mood_low **−62%** (confidence **0.95** — from your good vs poor sleep nights).
+
+**Collaboration line:** 4 poor-sleep nights near travel + stress near deadlines — Hermes calendar + sidecar patterns combined.
+
+Run `./scripts/vitaside preflight` before stage — prints live `PITCH_*` values if demo data shifts.
 
 ---
 
 ## Pre-flight (5 min)
 
+From repo root: `./scripts/vitaside preflight` (acceptance via `./scripts/vitaside test`). Or:
+
 ```bash
 cd code/health-mcp-starter
 pip install -r requirements.txt
+./pitch_preflight.sh              # 5 min — must say PREFLIGHT OK
 ./run-demo-full.sh --hardening   # must pass 3/3
 open out/vitaside-report-$(date +%Y-%m-%d).html   # bookmark this tab
+open out/vitaside-doctor-$(date +%Y-%m-%d).html
 ```
 
 Backup: screenshot `out/` + terminal output. Pre-record `./run-demo-full.sh` once.

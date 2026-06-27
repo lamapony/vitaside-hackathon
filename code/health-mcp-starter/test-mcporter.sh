@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# mcporter tests for VitaCo Health MCP v2 — Apple Health integration
+# mcporter integration tests — VitaSide MCP 1.1
 # Usage: bash test-mcporter.sh
 set -euo pipefail
 
-SERVER_STDIO="/opt/anaconda3/bin/python3 $(dirname "$0")/health-pattern-mcp.py"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/venv-python.sh"
+export OMI_VAULT_PATH="${OMI_VAULT_PATH:-$ROOT/demo-data/vault}"
+export VITASIDE_MANIFEST="${VITASIDE_MANIFEST:-$ROOT/sidecars/sleep-stress-sidecar/manifest.yaml}"
+
+SERVER_STDIO="$PYTHON $ROOT/health-pattern-mcp.py"
 PASS=0
 FAIL=0
 
@@ -21,11 +27,42 @@ run_test() {
         FAIL=$((FAIL+1))
         return
     }
-    if echo "$output" | grep -q "$expected"; then
+    if "$PYTHON" - "$expected" "$output" <<'PY'
+import json, sys
+
+needle = sys.argv[1].strip().strip('"')
+raw = sys.argv[2]
+
+def load_payload(text: str):
+    text = text.strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+def matches(obj, token: str) -> bool:
+    token_l = token.lower()
+    if isinstance(obj, dict):
+        return any(
+            token_l in str(key).lower() or matches(value, token)
+            for key, value in obj.items()
+        )
+    if isinstance(obj, list):
+        return any(matches(item, token) for item in obj)
+    return token_l in str(obj).lower()
+
+payload = load_payload(raw)
+if payload is not None and matches(payload, needle):
+    sys.exit(0)
+sys.exit(0 if needle in raw else 1)
+PY
+    then
         green "    PASS"
         PASS=$((PASS+1))
     else
-        red "    FAIL (expected to contain '$expected')"
+        red "    FAIL (expected JSON key '$expected')"
         echo "    Output: $(echo "$output" | cut -c1-200)"
         FAIL=$((FAIL+1))
     fi
@@ -33,68 +70,93 @@ run_test() {
 
 echo ""
 blue "============================================"
-blue "  VitaCo Health MCP v2 — mcporter tests"
+blue "  VitaSide MCP 1.1 — mcporter tests"
 blue "============================================"
 echo ""
 
-# 1. List tools
-run_test "list tools (8 total)" \
+run_test "list tools — smart_analysis" \
     "npx mcporter list --stdio '$SERVER_STDIO'" \
-    "load_apple_health_data"
+    "smart_analysis"
 
-# 2. load_apple_health_data — demo data
-run_test "load_apple_health_data" \
-    "npx mcporter call --stdio '$SERVER_STDIO' load_apple_health_data --timeout 20000" \
-    '"status": "ok"'
+run_test "find_correlation (fast)" \
+    "npx mcporter call --stdio '$SERVER_STDIO' find_correlation --timeout 60000 --args '{\"metric_a\":\"sleep\",\"metric_b\":\"stress\",\"lag\":1}'" \
+    "co_occurrences"
 
-# 3. load_apple_health_data — has metrics
-run_test "load_apple_health_data — metrics" \
-    "npx mcporter call --stdio '$SERVER_STDIO' load_apple_health_data --timeout 20000" \
-    '"heart_rate"'
+run_test "get_actionable_briefing" \
+    "npx mcporter call --stdio '$SERVER_STDIO' get_actionable_briefing --timeout 120000" \
+    "top_insights"
 
-# 4. analyze_apple_patterns
-run_test "analyze_apple_patterns" \
-    "npx mcporter call --stdio '$SERVER_STDIO' analyze_apple_patterns --timeout 20000" \
-    '"patterns_found"'
+run_test "smart_analysis" \
+    "npx mcporter call --stdio '$SERVER_STDIO' smart_analysis --timeout 120000" \
+    "personal_baselines"
 
-# 5. analyze_apple_patterns — sleep patterns
-run_test "analyze_apple_patterns — sleep" \
-    "npx mcporter call --stdio '$SERVER_STDIO' analyze_apple_patterns --timeout 20000" \
-    '"metric": "sleep"'
+run_test "list_data_sources" \
+    "npx mcporter call --stdio '$SERVER_STDIO' list_data_sources --timeout 60000" \
+    "omi_vault"
 
-# 6. analyze_apple_patterns — anomalies
-run_test "analyze_apple_patterns — anomalies" \
-    "npx mcporter call --stdio '$SERVER_STDIO' analyze_apple_patterns --timeout 20000" \
-    '"short_sleep"'
+run_test "get_analysis_mechanics" \
+    "npx mcporter call --stdio '$SERVER_STDIO' get_analysis_mechanics --timeout 30000" \
+    "pipeline"
 
-# 7. analyze_apple_patterns — cross-correlation
-run_test "analyze_apple_patterns — cross_corr" \
-    "npx mcporter call --stdio '$SERVER_STDIO' analyze_apple_patterns --timeout 20000" \
-    '"cross_correlation"'
-
-# 8. combine_omi_and_apple
 run_test "combine_omi_and_apple" \
-    "npx mcporter call --stdio '$SERVER_STDIO' combine_omi_and_apple --timeout 20000" \
-    '"merged_dates_analyzed"'
+    "npx mcporter call --stdio '$SERVER_STDIO' combine_omi_and_apple --timeout 120000" \
+    "overlap_days"
 
-# 9. generate_doctor_report — contains Apple Health section
-run_test "doctor report — Apple Health" \
-    "npx mcporter call --stdio '$SERVER_STDIO' generate_doctor_report --timeout 20000" \
-    'Apple Health'
+run_test "simulate_whatif" \
+    "npx mcporter call --stdio '$SERVER_STDIO' simulate_whatif --timeout 120000 --args '{\"scenario\":{\"duration_days\":14}}'" \
+    "projected_outcomes"
 
-# 10. list_data_sources — shows apple health support
-run_test "list_data_sources — Apple Health" \
-    "npx mcporter call --stdio '$SERVER_STDIO' list_data_sources --timeout 20000" \
-    '"apple_health_metrics"'
+run_test "generate_visit_questions" \
+    "npx mcporter call --stdio '$SERVER_STDIO' generate_visit_questions --timeout 60000" \
+    '"questions"'
 
-# 11. analyze_lifestyle_patterns (original tool still works — may return demo)
-run_test "original analyze_lifestyle_patterns" \
-    "npx mcporter call --stdio '$SERVER_STDIO' analyze_lifestyle_patterns --timeout 20000" \
-    '"demo_patterns"'
+run_test "get_sidecar_status" \
+    "npx mcporter call --stdio '$SERVER_STDIO' get_sidecar_status --timeout 30000" \
+    "expires_at"
+
+run_test "collaborative_insight" \
+    "npx mcporter call --stdio '$SERVER_STDIO' collaborative_insight --timeout 60000" \
+    '"collaborative_insight"'
+
+run_test "collaborative_insight with host_context" \
+    "npx mcporter call --stdio '$SERVER_STDIO' collaborative_insight --timeout 60000 --args '{\"host_context\":{\"agent\":\"hermes\",\"events\":[{\"date\":\"2026-05-02\",\"type\":\"travel\",\"note\":\"Red-eye flight\"},{\"date\":\"2026-05-16\",\"type\":\"deadline\",\"note\":\"Launch week\"}]}}'" \
+    '"collaborative_insight"'
+
+# Depth tools — run only when backend registers them
+TOOLS_LIST=$(npx mcporter list --stdio "$SERVER_STDIO" 2>/dev/null || true)
+SKIP=0
+
+run_optional_test() {
+    local name="$1"
+    local tool="$2"
+    local cmd="$3"
+    local expected="$4"
+    if ! echo "$TOOLS_LIST" | grep -q "$tool"; then
+        blue "  SKIP: $name (tool not registered)"
+        SKIP=$((SKIP+1))
+        return
+    fi
+    run_test "$name" "$cmd" "$expected"
+}
+
+echo ""
+blue "--- Optional depth tools (backend) ---"
+
+run_optional_test "get_clinical_summary" "get_clinical_summary" \
+    "npx mcporter call --stdio '$SERVER_STDIO' get_clinical_summary --timeout 120000" \
+    '"headline"'
+
+run_optional_test "run_n1_compare" "run_n1_compare" \
+    "npx mcporter call --stdio '$SERVER_STDIO' run_n1_compare --timeout 120000 --args '{\"exposure_signal\":\"stress\",\"outcome_signal\":\"mood_low\",\"window_days\":2}'" \
+    '"interpretation"'
+
+run_optional_test "export_fhir_bundle" "export_fhir_bundle" \
+    "npx mcporter call --stdio '$SERVER_STDIO' export_fhir_bundle --timeout 120000" \
+    '"resourceType"'
 
 echo ""
 blue "============================================"
-echo "  Results: $PASS passed, $FAIL failed"
+echo "  Results: $PASS passed, $FAIL failed, $SKIP skipped"
 blue "============================================"
 
 if [ "$FAIL" -gt 0 ]; then

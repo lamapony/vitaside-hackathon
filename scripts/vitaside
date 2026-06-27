@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Repo-root QA wrapper — delegates to code/health-mcp-starter.
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP="$REPO_ROOT/code/health-mcp-starter"
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  test)
+    cd "$APP"
+    # shellcheck disable=SC1091
+    source "$APP/scripts/venv-python.sh"
+    exec "$PYTHON" test_mvp.py "$@"
+    ;;
+  demo)
+    cd "$APP"
+    exec ./run-demo.sh "$@"
+    ;;
+  serve-ui)
+    cd "$APP"
+    exec ./serve-ui.sh "$@"
+    ;;
+  preflight)
+    cd "$APP"
+    exec ./pitch_preflight.sh "$@"
+    ;;
+  *)
+    echo "Usage: $0 {test|demo|serve-ui|preflight} [args...]" >&2
+    exit 1
+    ;;
+esac

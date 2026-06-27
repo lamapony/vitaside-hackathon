@@ -2,6 +2,8 @@
 # VitaSide full demo — single run or 3× hardening with timing
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/venv-python.sh"
 export OMI_VAULT_PATH="${OMI_VAULT_PATH:-$ROOT/demo-data/vault}"
 RUNS="${1:-1}"
 if [[ "$RUNS" == "--hardening" || "$RUNS" == "3" ]]; then RUNS=3; fi
@@ -14,7 +16,7 @@ run_once() {
 
   if [[ ! -d "$OMI_VAULT_PATH/050 Daily Omi/Conversations" ]] || \
      [[ -z "$(find "$OMI_VAULT_PATH/050 Daily Omi/Conversations" -name '*.md' 2>/dev/null | head -1)" ]]; then
-    python3 "$ROOT/gen_demo_data.py"
+    "$PYTHON" "$ROOT/gen_demo_data.py"
   fi
 
   chmod +x "$ROOT/issue-sidecar.sh" "$ROOT/collaboration_demo.py"
@@ -24,12 +26,12 @@ run_once() {
   [[ "$n" == "1" ]] && rm -f "$ROOT/audit.log"
 
   echo "--- issue OK ---"
-  python3 "$ROOT/health-pattern-mcp.py" --test
-  python3 "$ROOT/run_demo_check.py" sidecar
-  python3 "$ROOT/run_demo_check.py" analyze
-  python3 "$ROOT/run_demo_check.py" whatif
-  python3 "$ROOT/run_demo_check.py" html
-  python3 "$ROOT/collaboration_demo.py"
+  "$PYTHON" "$ROOT/health-pattern-mcp.py" --test
+  "$PYTHON" "$ROOT/run_demo_check.py" sidecar
+  "$PYTHON" "$ROOT/run_demo_check.py" analyze
+  "$PYTHON" "$ROOT/run_demo_check.py" whatif
+  "$PYTHON" "$ROOT/run_demo_check.py" html
+  "$PYTHON" "$ROOT/collaboration_demo.py"
   wc -l "$ROOT/audit.log" | awk '{print "audit_lines=" $1}'
 
   local elapsed=$((SECONDS - t0))

@@ -35,8 +35,31 @@ from apple_merge import parse_daily, merge_with_omi
 from anonymize import anonymize_text, anonymize_citations
 from visit_questions import generate_visit_questions as build_visit_questions
 from export_obsidian import build_obsidian_note
-from analytics_depth import add_pvalues, weekly_summary, compare_periods as compare_periods_analysis
+from analytics_depth import add_pvalues, apply_fdr, weekly_summary, compare_periods as compare_periods_analysis
+from clinical_summary import build_clinical_summary
+from n1_compare import run_n1_compare as _run_n1_compare
+from fhir_export import build_fhir_bundle
+from condition_tracking import list_packs, load_pack, track_entries, format_condition_report
 from actionable_insights import build_actionable_briefing, format_briefing_terminal
+from smart_analytics import run_smart_analysis
+from journal_insights import (
+    headache_trigger_correlations,
+    journal_digest,
+    list_journals as build_journal_list,
+    manual_logs_to_entries,
+    merge_entries_by_date,
+)
+from narrative_engine import build_local_narrative
+from user_context import load_context
+from data_sources import (
+    build_sources_snapshot,
+    get_analysis_mechanics as _analysis_mechanics_doc,
+    find_apple_export as _find_apple_export_ds,
+    omi_search_paths as _omi_search_paths_ds,
+)
+from azure_contract import build_payload, contract_info, azure_enabled
+from azure_boost import azure_status, enhance_insight as azure_enhance, share_report as azure_share, require_azure
+from skin_analysis import analyze_skin_photo as _analyze_skin_photo
 
 _MANIFEST: Optional[Dict[str, Any]] = None
 
@@ -83,12 +106,6 @@ SLEEP_GOOD_RE = re.compile(
     r"(спал\s+отлично|хорош\S*\s+сон|выспал|крепк\S*\s+сон|good.?sleep)",
     re.I,
 )
-APPLE_HEALTH_PATHS = [
-    OMI_VAULT_PATH / "Apple Health",
-    Path.home() / "Downloads" / "apple_health_export",
-    Path.home() / "Documents" / "apple_health_export",
-    Path.home() / "Desktop" / "apple_health_export",
-]
 
 # Enhanced SIGNAL_PATTERNS (from Omi sub-agent improvements)
 SIGNAL_PATTERNS = {
@@ -246,17 +263,7 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 def _omi_search_paths(vault: Path) -> List[Path]:
-    paths: List[Path] = []
-    for part in os.getenv("VITASIDE_OMI_PATHS", "").split(":"):
-        if part.strip():
-            p = Path(part.strip()).expanduser()
-            if p.exists():
-                paths.append(p)
-    for rel in ("050 Daily Omi/Conversations", "050 Daily Omi", "Daily Notes", "Journal", "Health"):
-        p = vault / rel
-        if p.exists() and p not in paths:
-            paths.append(p)
-    return paths or [vault]
+    return _omi_search_paths_ds(vault)
 
 
 def _parseable_count(vault: Path, cap: int = 200) -> int:
@@ -267,7 +274,78 @@ def _parseable_count(vault: Path, cap: int = 200) -> int:
     return sum(1 for f in files if _parse_omi_file(f))
 
 
-def _build_brief(entries: List[Dict], analysis: Dict[str, Any]) -> Dict[str, Any]:
+def _active_condition_id() -> Optional[str]:
+    m = _get_manifest()
+    return os.getenv("VITASIDE_CONDITION_PACK") or m.get("condition_pack")
+
+
+def _track_condition_core(condition: str, days: int = 90) -> Dict[str, Any]:
+    entries = _scan_omi(120, tool="track_condition")
+    pack = load_pack(condition)
+    return track_entries(entries, pack, days)
+
+
+def _gather_azure_context() -> Dict[str, Any]:
+    """Collect local analysis for Azure payload (no cloud I/O)."""
+    entries = _scan_omi(120, tool="azure_context")
+    analysis = analyze_lifestyle_patterns()
+    brief = analysis.get("actionable_briefing") or _build_brief(entries, analysis)
+    whatif = _simulate_whatif_core(
+        entries,
+        {"intervention": "consistent_sleep_7_5h", "duration_days": 14, "target_signals": ["mood_low", "stress"]},
+    )
+    period = compare_periods_analysis(entries, 14)
+    condition = None
+    cid = _active_condition_id()
+    if cid:
+        try:
+            condition = _track_condition_core(cid, 90)
+        except ValueError:
+            condition = None
+    return {
+        "entries": entries,
+        "analysis": analysis,
+        "briefing": brief,
+        "whatif": whatif,
+        "period_compare": period,
+        "condition": condition,
+    }
+
+
+def _build_azure_payload(
+    operation: str,
+    user_consent: bool,
+    anonymize: bool = True,
+    locale: str = "ru",
+    prompt_hint: str = "",
+) -> Dict[str, Any]:
+    manifest = _get_manifest()
+    ctx = _gather_azure_context()
+    return build_payload(
+        operation,
+        manifest,
+        analysis=ctx["analysis"],
+        briefing=ctx["briefing"],
+        condition=ctx["condition"],
+        whatif=ctx["whatif"],
+        period_compare=ctx["period_compare"],
+        user_consent=user_consent,
+        anonymize=anonymize,
+        locale=locale,
+        prompt_hint=prompt_hint,
+    )
+
+
+def _smart_analysis_core(entries: List[Dict], correlations: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    apple_daily = parse_daily(_find_apple_export())
+    return run_smart_analysis(entries, correlations, apple_daily)
+
+
+def _build_brief(
+    entries: List[Dict],
+    analysis: Dict[str, Any],
+    smart: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     by_date = _entries_by_date(entries)
     merge = merge_with_omi(by_date, parse_daily(_find_apple_export()))
     whatif = _simulate_whatif_core(entries, {
@@ -276,7 +354,9 @@ def _build_brief(entries: List[Dict], analysis: Dict[str, Any]) -> Dict[str, Any
         "target_signals": ["mood_low", "stress", "symptom_pain"],
     })
     period = compare_periods_analysis(entries, 14)
-    return build_actionable_briefing(analysis, merge, whatif, period)
+    if smart is None:
+        smart = _smart_analysis_core(entries, analysis.get("temporal_correlations"))
+    return build_actionable_briefing(analysis, merge, whatif, period, smart)
 
 
 def _resolve_vault() -> Path:
@@ -303,8 +383,54 @@ def _scan_omi(limit: int = 100, tool: str = "scan_omi") -> List[Dict]:
     files = sorted(set(files), key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
     allowed_files = [f for f in files if check_scope(manifest, f)][:limit]
     parsed = [p for p in (_parse_omi_file(f) for f in allowed_files) if p]
-    audit(tool, {"files": [str(f) for f in allowed_files], "count": len(parsed), "vault": str(vault)})
+    audit("scoped_read", {
+        "tool": tool,
+        "scoped": True,
+        "files": [str(f) for f in allowed_files],
+        "count": len(parsed),
+        "vault": str(vault),
+    })
     return parsed
+
+
+def _match_signals_from_text(text: str) -> List[str]:
+    full_text = text.lower()
+    found = []
+    for sig, cfg in SIGNAL_PATTERNS.items():
+        if re.search(cfg["keywords"], full_text, re.I):
+            found.append(sig)
+    return found
+
+
+def _omi_entries(limit: int = 120, tool: str = "omi_entries") -> List[Dict]:
+    entries = _scan_omi(limit, tool=tool)
+    for e in entries:
+        e.setdefault("journal_id", "omi_voice")
+        e.setdefault("source", "omi")
+    return entries
+
+
+def _manual_entries() -> List[Dict]:
+    logs = load_context().get("manual_logs", [])
+    return manual_logs_to_entries(logs, _match_signals_from_text)
+
+
+def _combined_entries(limit: int = 120, tool: str = "combined_entries") -> List[Dict]:
+    return merge_entries_by_date(_omi_entries(limit, tool=f"{tool}_omi"), _manual_entries())
+
+
+def _journal_bundle(limit: int = 120, tool: str = "journals") -> Dict[str, Any]:
+    omi = _omi_entries(limit, tool=f"{tool}_omi")
+    manual = _manual_entries()
+    combined = merge_entries_by_date(omi, manual)
+    headache = headache_trigger_correlations(combined)
+    return {
+        "omi": omi,
+        "manual": manual,
+        "combined": combined,
+        "headache": headache,
+        "catalog": build_journal_list(omi, manual, combined),
+    }
 
 
 def _entries_by_date(entries: List[Dict]) -> Dict[str, Dict]:
@@ -484,12 +610,7 @@ def _simulate_whatif_core(entries: List[Dict], scenario: Dict[str, Any]) -> Dict
 
 # Apple Health (kept from previous)
 def _find_apple_export() -> Optional[Path]:
-    for p in APPLE_HEALTH_PATHS:
-        if p.exists():
-            xml = p / "export.xml"
-            if xml.exists():
-                return xml
-    return None
+    return _find_apple_export_ds(_resolve_vault())
 
 def _generate_demo_apple() -> Dict[str, Any]:
     import random
@@ -571,21 +692,62 @@ def _compute_temporal_correlations(ts: Dict, max_lag: int = 3) -> List[Dict]:
                     })
     return sorted(results, key=lambda x: x["lift_ratio"], reverse=True)[:15]
 
-def _compute_baseline_stats(ts: Dict) -> Dict[str, Any]:
+def _compute_baseline_stats(ts: Dict, entries: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    """Personal baseline bands when enough data; fallback to simple frequency."""
+    if entries and len(ts.get("date_list", [])) >= 14:
+        personal = run_smart_analysis(entries).get("personal_baselines", {}).get("signals", {})
+        if personal:
+            stats = {}
+            for sig in SIGNAL_PATTERNS:
+                bl = personal.get(sig, {})
+                if bl:
+                    stats[sig] = {
+                        "frequency": bl.get("mean_freq", 0),
+                        "std": bl.get("std_freq", 0),
+                        "band_low": bl.get("band_low"),
+                        "band_high": bl.get("band_high"),
+                        "trend": bl.get("trend", "stable"),
+                        "personal": True,
+                    }
+                else:
+                    date_list = ts["date_list"]
+                    by_date = ts["by_date"]
+                    freq = sum(1 for d in date_list if sig in by_date.get(d, set())) / max(len(date_list), 1)
+                    stats[sig] = {"frequency": round(freq, 3), "std": 0.0, "trend": "stable", "personal": False}
+            return stats
+
     date_list = ts["date_list"]
     by_date = ts["by_date"]
     stats = {}
     n = len(date_list)
     for sig in SIGNAL_PATTERNS:
         freq = sum(1 for d in date_list if sig in by_date.get(d, set())) / max(n, 1)
-        stats[sig] = {"frequency": round(freq, 3), "std": 0.0, "trend": "stable"}
+        stats[sig] = {"frequency": round(freq, 3), "std": 0.0, "trend": "stable", "personal": False}
     return stats
 
-def _compute_anomalies(entries: List[Dict], baseline: Dict) -> List[Dict]:
+
+def _compute_anomalies(entries: List[Dict], baseline: Dict, smart: Optional[Dict] = None) -> List[Dict]:
+    """Personal-band anomalies preferred over global rare-signal threshold."""
+    if smart and smart.get("personal_anomalies"):
+        out = []
+        for a in smart["personal_anomalies"][:10]:
+            out.append({
+                "date": a.get("date"),
+                "signal": a.get("signal"),
+                "type": a.get("type", "personal_anomaly"),
+                "severity": a.get("severity"),
+                "recent_rate": a.get("recent_rate"),
+                "personal_mean": a.get("personal_mean"),
+                "excerpt": a.get("excerpt", ""),
+            })
+        return out
+
     anomalies = []
     for e in entries:
         for sig in e.get("signals", []):
-            if baseline.get(sig, {}).get("frequency", 0) < 0.1:
+            bl = baseline.get(sig, {})
+            freq = bl.get("frequency", 0)
+            if freq < 0.1:
                 anomalies.append({"date": e["date"], "signal": sig, "type": "rare_signal"})
     return anomalies[:10]
 
@@ -615,16 +777,21 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
     entries = _scan_omi(120, tool="analyze_lifestyle_patterns")
     ts = _build_timeseries(entries)
     by_date = ts["by_date"]
-    baseline = _compute_baseline_stats(ts)
-    temporal = _enrich_correlations(entries, add_pvalues(_compute_temporal_correlations(ts), len(by_date)))
-    anomalies = _enrich_anomalies(entries, _compute_anomalies(entries, baseline))
+    temporal_raw = _compute_temporal_correlations(ts)
+    temporal = _enrich_correlations(entries, apply_fdr(add_pvalues(temporal_raw, len(by_date))))
+    smart = _smart_analysis_core(entries, temporal)
+    # Re-rank correlations with personal intelligence
+    if smart.get("ranked_correlations"):
+        temporal = _enrich_correlations(entries, smart["ranked_correlations"][:15])
+    baseline = _compute_baseline_stats(ts, entries)
+    anomalies = _enrich_anomalies(entries, _compute_anomalies(entries, baseline, smart))
     apple = analyze_apple_patterns()
 
     co = sum(1 for sigs in by_date.values() if "sleep" in sigs and "stress" in sigs)
     vault = _resolve_vault()
     manifest = _get_manifest()
     core = {
-        "version": "1.0-mvp",
+        "version": "1.1-smart",
         "sidecar": manifest.get("name"),
         "sidecar_expired": is_expired(manifest),
         "sidecar_revoked": is_revoked(manifest),
@@ -638,12 +805,13 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
         "co_occurrence": [{"pattern": "sleep+stress same day", "count": co, "confidence": _confidence_from_samples(co)}],
         "temporal_correlations": temporal,
         "anomalies": anomalies,
+        "smart_analysis": smart,
         "apple_patterns": apple,
         "recommendations": ["Collect more Omi notes on sleep/mood", "Export Apple Health data"],
         "audit_summary": audit_summary(5),
-        "phase": "demo-polish",
+        "phase": "smart-analytics",
     }
-    core["actionable_briefing"] = _build_brief(entries, core)
+    core["actionable_briefing"] = _build_brief(entries, core, smart)
     return _with_gates(core)
 
 @mcp.tool()
@@ -652,7 +820,32 @@ def get_actionable_briefing() -> Dict[str, Any]:
     entries = _scan_omi(120, tool="get_actionable_briefing")
     analysis = analyze_lifestyle_patterns()
     brief = analysis.get("actionable_briefing") or _build_brief(entries, analysis)
+    brief["smart_summary"] = (analysis.get("smart_analysis") or {}).get("summary", {})
+    brief["local_narrative"] = build_local_narrative(brief, analysis.get("smart_analysis"))
     return _with_gates(brief)
+
+
+@mcp.tool()
+def smart_analysis() -> Dict[str, Any]:
+    """
+    Personal intelligence: baseline bands, weekday effects, attention-now alerts.
+    Uses YOUR history — not population thresholds.
+    """
+    entries = _scan_omi(120, tool="smart_analysis")
+    ts = _build_timeseries(entries)
+    temporal = _compute_temporal_correlations(ts)
+    smart = _smart_analysis_core(entries, temporal)
+    audit("smart_analysis", {"days": smart.get("personal_baselines", {}).get("days_analyzed", 0)})
+    return _with_gates(smart)
+
+
+@mcp.tool()
+def get_local_narrative(locale: str = "ru") -> Dict[str, Any]:
+    """Cite-grounded narrative from local data — no cloud required."""
+    entries = _scan_omi(120, tool="get_local_narrative")
+    analysis = analyze_lifestyle_patterns()
+    brief = analysis.get("actionable_briefing") or _build_brief(entries, analysis)
+    return _with_gates(build_local_narrative(brief, analysis.get("smart_analysis"), locale))
 
 @mcp.tool()
 def find_correlation(metric_a: str = "sleep", metric_b: str = "stress", lag: int = 1) -> Dict[str, Any]:
@@ -802,9 +995,11 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         by_date = _entries_by_date(entries)
         apple_daily = parse_daily(_find_apple_export())
         merge = merge_with_omi(by_date, apple_daily)
+        clinical = _clinical_summary_core(entries, analysis, merge)
         doc_html = generate_doctor_view(
             analysis, merge, whatif, DISCLAIMER,
             analysis.get("actionable_briefing") or _build_brief(entries, analysis),
+            clinical=clinical,
         )
         out_path = _SCRIPT_DIR / "out" / f"vitaside-doctor-{datetime.date.today()}.html"
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -848,7 +1043,7 @@ def generate_visit_questions() -> Dict[str, Any]:
     analysis = analyze_lifestyle_patterns()
     merge = combine_omi_and_apple()
     whatif = _simulate_whatif_core(entries, {"duration_days": 14, "target_signals": ["mood_low", "stress"]})
-    return _with_gates(build_visit_questions(analysis, merge, whatif))
+    return _with_gates(build_visit_questions(analysis, merge, whatif, analysis.get("smart_analysis")))
 
 @mcp.tool()
 def weekly_summary_report() -> Dict[str, Any]:
@@ -861,6 +1056,181 @@ def compare_periods(recent_days: int = 14) -> Dict[str, Any]:
     """Compare signal frequency: last N days vs the N days before that."""
     entries = _scan_omi(120, tool="compare_periods")
     return _with_gates(compare_periods_analysis(entries, recent_days))
+
+
+def _clinical_summary_core(
+    entries: List[Dict],
+    analysis: Optional[Dict[str, Any]] = None,
+    merge: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    analysis = analysis or analyze_lifestyle_patterns()
+    period = compare_periods_analysis(entries, 14)
+    if merge is None:
+        by_date = _entries_by_date(entries)
+        merge = merge_with_omi(by_date, parse_daily(_find_apple_export()))
+    whatif = _simulate_whatif_core(entries, {"duration_days": 14, "target_signals": ["mood_low", "stress"]})
+    questions = build_visit_questions(analysis, merge, whatif, analysis.get("smart_analysis"))
+    return build_clinical_summary(
+        analysis=analysis,
+        period_compare=period,
+        smart=analysis.get("smart_analysis"),
+        user_context=load_context(),
+        visit_questions=questions,
+        merge=merge,
+    )
+
+
+@mcp.tool()
+def get_clinical_summary() -> Dict[str, Any]:
+    """One-page clinical summary: trends, problem list, top patterns, visit questions."""
+    entries = _scan_omi(120, tool="get_clinical_summary")
+    summary = _clinical_summary_core(entries)
+    audit("get_clinical_summary", {"trends": len(summary.get("trends", []))})
+    return _with_gates(summary)
+
+
+@mcp.tool()
+def run_n1_compare(
+    exposure_signal: str = "stress",
+    outcome_signal: str = "mood_low",
+    window_days: int = 2,
+) -> Dict[str, Any]:
+    """N-of-1: outcome rate after exposure days vs control days (within-person)."""
+    entries = _scan_omi(120, tool="run_n1_compare")
+    result = _run_n1_compare(entries, exposure_signal, outcome_signal, window_days)
+    audit("run_n1_compare", {
+        "exposure": exposure_signal,
+        "outcome": outcome_signal,
+        "confidence": result.get("confidence"),
+    })
+    return _with_gates(result)
+
+
+@mcp.tool()
+def export_fhir_bundle(anonymize: bool = False) -> Dict[str, Any]:
+    """PGHD FHIR Bundle — binned trends and patterns, no raw Omi transcripts."""
+    entries = _scan_omi(120, tool="export_fhir_bundle")
+    summary = _clinical_summary_core(entries)
+    bundle = build_fhir_bundle(summary, anonymize=anonymize)
+    out_path = _SCRIPT_DIR / "out" / f"vitaside-fhir-{datetime.date.today()}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
+    audit("export_fhir_bundle", {"entries": len(bundle.get("entry", [])), "path": str(out_path)})
+    payload = _with_gates({"bundle_path": str(out_path), "entry_count": len(bundle.get("entry", []))})
+    payload["bundle"] = bundle
+    return payload
+
+
+@mcp.tool()
+def list_condition_packs() -> Dict[str, Any]:
+    """List available condition tracking packs (bipolar, migraine, …)."""
+    return _with_gates({"packs": list_packs(), "active": _active_condition_id()})
+
+
+@mcp.tool()
+def track_condition(condition: str = "", days: int = 90) -> Dict[str, Any]:
+    """
+    Condition-specific tracking: mood/sleep/meds for bipolar;
+    episodes, acute meds, triggers for migraine. Patterns only — not diagnosis.
+    """
+    cid = condition.strip() or _active_condition_id()
+    if not cid:
+        return _with_gates({
+            "error": "No condition specified. Pass condition= or issue a condition sidecar.",
+            "available": list_packs(),
+        })
+    result = _track_condition_core(cid, days)
+    audit("track_condition", {"condition": cid, "days": days})
+    return _with_gates(result)
+
+
+@mcp.tool()
+def condition_report(condition: str = "", days: int = 90, format: str = "markdown") -> str:
+    """Markdown or JSON report for a condition tracking pack."""
+    cid = condition.strip() or _active_condition_id()
+    if not cid:
+        return "No condition pack active. Use list_condition_packs() or issue a condition sidecar."
+    data = _track_condition_core(cid, days)
+    audit("condition_report", {"condition": cid, "format": format})
+    if format == "json":
+        return json.dumps(data, ensure_ascii=False, indent=2)
+    return format_condition_report(data)
+
+
+@mcp.tool()
+def get_azure_contract() -> Dict[str, Any]:
+    """Azure integration contract: operations, manifest flags, env checklist (for hybrid agent)."""
+    return _with_gates(azure_status(_get_manifest()))
+
+
+@mcp.tool()
+def preview_azure_payload(
+    operation: str = "enhance_insight",
+    user_consent: bool = False,
+    anonymize: bool = True,
+) -> Dict[str, Any]:
+    """Dry-run: JSON that would be sent to Azure. Does not call the network."""
+    manifest = _get_manifest()
+    if operation not in contract_info(manifest)["allowed_operations"] and azure_enabled(manifest):
+        return _with_gates({"error": f"Operation '{operation}' not allowed in manifest", "allowed": contract_info(manifest)["allowed_operations"]})
+    try:
+        payload = _build_azure_payload(operation, user_consent, anonymize=anonymize)
+    except (ValueError, PermissionError) as e:
+        return _with_gates({"error": str(e)})
+    audit("preview_azure_payload", {
+        "operation": operation,
+        "consent": user_consent,
+        "fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint"),
+    })
+    return _with_gates({"payload": payload, "note": "Preview only — nothing sent to Azure."})
+
+
+@mcp.tool()
+def azure_enhance_insight(
+    user_consent: bool = False,
+    anonymize: bool = True,
+    prompt_hint: str = "",
+    locale: str = "ru",
+) -> Dict[str, Any]:
+    """
+    Optional Azure OpenAI boost over local patterns. Requires enable_azure_boost + user_consent=True.
+    Default mode: local stub narrative (no network).
+    """
+    require_azure(_get_manifest(), "enhance_insight")
+    if not user_consent:
+        return _with_gates({
+            "error": "consent_required",
+            "hint": "Call preview_azure_payload first, then pass user_consent=True.",
+        })
+    payload = _build_azure_payload("enhance_insight", True, anonymize=anonymize, locale=locale, prompt_hint=prompt_hint)
+    result = azure_enhance(payload)
+    audit("azure_enhance_insight", {
+        "fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint"),
+        "source": result.get("source"),
+        "mode": os.getenv("VITASIDE_AZURE_MODE", "stub"),
+    })
+    return _with_gates({**result, "payload_fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint")})
+
+
+@mcp.tool()
+def azure_share_report(
+    user_consent: bool = False,
+    anonymize: bool = True,
+    ttl_hours: int = 48,
+) -> Dict[str, Any]:
+    """Upload minimized report for time-limited doctor link (Azure Function when live)."""
+    require_azure(_get_manifest(), "share_report")
+    if not user_consent:
+        return _with_gates({"error": "consent_required"})
+    payload = _build_azure_payload("share_report", True, anonymize=anonymize)
+    result = azure_share(payload, ttl_hours=ttl_hours)
+    audit("azure_share_report", {
+        "fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint"),
+        "ttl_hours": ttl_hours,
+        "share_url": result.get("share_url"),
+    })
+    return _with_gates({**result, "payload_fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint")})
+
 
 @mcp.tool()
 def export_visit_bundle(anonymize: bool = False) -> Dict[str, Any]:
@@ -913,27 +1283,132 @@ def get_sidecar_status() -> Dict[str, Any]:
     })
 
 @mcp.tool()
-def list_data_sources() -> Dict[str, Any]:
-    export = _find_apple_export()
-    vault = _resolve_vault()
-    return _with_gates({
-        "version": "1.0-mvp",
-        "sidecar": _get_manifest().get("name"),
-        "omi_files": len(list((vault / "050 Daily Omi").rglob("*.md"))) if (vault / "050 Daily Omi").exists() else 0,
-        "apple_export_found": bool(export),
-        "supported_signals": list(SIGNAL_PATTERNS.keys()),
-        "parser_features": [
-            "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
-            "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
-            "omi-apple daily merge", "doctor view export",
-        ],
-        "status": "MVP 1.0 complete — see docs/MVP-1.0.md",
+def list_journals() -> Dict[str, Any]:
+    """
+    Your diaries: Omi voice notes, manual quick logs, combined timeline, headache journal.
+    Each entry shows day count, date range, and top signals.
+    """
+    bundle = _journal_bundle(120, tool="list_journals")
+    audit("list_journals", {
+        "omi_days": bundle["catalog"]["omi_days"],
+        "manual_days": bundle["catalog"]["manual_log_days"],
+        "headache_days": bundle["headache"].get("headache_days", 0),
     })
+    return _with_gates(bundle["catalog"])
+
+
+@mcp.tool()
+def headache_insights(max_lag: int = 2) -> Dict[str, Any]:
+    """
+    Headache / migraine patterns from ALL journals (Omi + manual logs).
+    Finds what tends to appear 1–2 days before headache days — with dated examples.
+    """
+    bundle = _journal_bundle(120, tool="headache_insights")
+    report = headache_trigger_correlations(bundle["combined"], max_lag=max_lag)
+    cond = None
+    try:
+        cond = _track_condition_core("migraine", 90)
+    except ValueError:
+        pass
+    audit("headache_insights", {"headache_days": report.get("headache_days", 0), "triggers": len(report.get("triggers", []))})
+    return _with_gates({
+        **report,
+        "journals_used": {
+            "omi_days": bundle["catalog"]["omi_days"],
+            "manual_log_days": bundle["catalog"]["manual_log_days"],
+            "combined_days": bundle["catalog"]["combined_days"],
+        },
+        "condition_pack": cond,
+    })
+
+
+@mcp.tool()
+def journal_summary(journal_id: str = "combined") -> Dict[str, Any]:
+    """Summary for one journal lane: omi_voice | manual_log | combined | headache."""
+    allowed = {"omi_voice", "manual_log", "combined", "headache"}
+    jid = journal_id if journal_id in allowed else "combined"
+    bundle = _journal_bundle(120, tool="journal_summary")
+    headache = bundle["headache"] if jid == "headache" else None
+    digest = journal_digest(bundle["combined"], jid, headache)
+    return _with_gates(digest)
+
+
+@mcp.tool()
+def list_data_sources() -> Dict[str, Any]:
+    """Catalog + live status: where analysis data comes from and what's connected."""
+    vault = _resolve_vault()
+    manifest = _get_manifest()
+    explicit = "OMI_VAULT_PATH" in os.environ
+    data_mode = "explicit" if explicit else ("demo" if str(vault) == str(_DEMO_VAULT) else "auto")
+    scoped_parseable = len(_scan_omi(120, tool="list_data_sources"))
+    snapshot = build_sources_snapshot(
+        vault,
+        manifest,
+        data_mode=data_mode,
+        active_condition=_active_condition_id(),
+        azure_enabled_flag=azure_enabled(manifest),
+        host_events=len(DEFAULT_HOST_CONTEXT.get("events", [])),
+        scoped_parseable=scoped_parseable,
+    )
+    snapshot["supported_signals"] = list(SIGNAL_PATTERNS.keys())
+    snapshot["sidecar"] = manifest.get("name")
+    snapshot["parser_features"] = [
+        "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
+        "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
+        "omi-apple daily merge", "doctor view export", "condition tracking packs",
+            "personal baseline bands", "weekday effects", "attention-now alerts",
+            "smart correlation ranking", "local cite-grounded narrative",
+            "multi-journal (Omi + manual logs)", "headache trigger correlations",
+        ]
+    audit("list_data_sources", {"vault": str(vault), "connected": snapshot["summary"]["connected_sources"]})
+    return _with_gates(snapshot)
+
+
+@mcp.tool()
+def get_analysis_mechanics() -> Dict[str, Any]:
+    """How analysis works: pipeline steps, inputs/outputs, which resources each tool uses."""
+    mechanics = _analysis_mechanics_doc()
+    mechanics["entry_tools"] = {
+        "start_here": "list_data_sources",
+        "run_analysis": "analyze_lifestyle_patterns",
+        "smart_layer": "smart_analysis",
+        "doctor_export": "export_visit_bundle",
+    }
+    return _with_gates(mechanics)
+
+
+@mcp.tool()
+def analyze_skin_photo(
+    image_path: str,
+    user_consent: bool = False,
+    use_external: bool = False
+) -> Dict[str, Any]:
+    """Preliminary local analysis of skin photo (ABCDE-inspired features).
+    Requires explicit user_consent. Optional external vision stub.
+    Returns features, flags, strong disclaimer. NOT a diagnosis.
+    """
+    manifest = _get_manifest()
+    result = _analyze_skin_photo(
+        image_path=image_path,
+        user_consent=user_consent,
+        use_external=use_external,
+        manifest=manifest,
+    )
+    audit("analyze_skin_photo", {
+        "consent": user_consent,
+        "external": use_external,
+        "fingerprint": result.get("image_fingerprint"),
+    })
+    return _with_gates(result)
 
 if __name__ == "__main__":
     import sys
     if "--test" in sys.argv:
         os.environ.setdefault("OMI_VAULT_PATH", str(_DEMO_VAULT))
+        os.environ.setdefault("VITASIDE_MANIFEST", str(_SCRIPT_DIR / "sidecars/sleep-stress-sidecar/manifest.yaml"))
+        _DEFAULT_VAULT = Path(os.environ["OMI_VAULT_PATH"])
+        OMI_VAULT_PATH = _DEFAULT_VAULT
+        _MANIFEST = None
         print("VitaSide MVP 1.0 self-test")
         test_entries = [
             {"date": "2026-06-01", "signals": ["sleep", "stress"], "snippet": "плохо спал ночью"},
@@ -953,6 +1428,19 @@ if __name__ == "__main__":
         print("Timeseries OK, dates:", len(ts["date_list"]))
         print("simulate_whatif OK, confidence:", sim["confidence"])
         print("HTML report OK, bytes:", len(html))
+        print("Checking vault readiness...")
+        analysis = analyze_lifestyle_patterns()
+        files = analysis.get("files_scanned", 0)
+        demo_vault = str(_DEMO_VAULT.resolve())
+        explicit_path = os.environ.get("OMI_VAULT_PATH", "")
+        using_demo = explicit_path and str(Path(explicit_path).resolve()) == demo_vault
+        if explicit_path and not using_demo and files == 0:
+            print(f"FAIL: explicit vault has 0 scoped files ({explicit_path})")
+            sys.exit(1)
+        if using_demo and files < 30:
+            print(f"FAIL: demo vault needs files_scanned >= 30, got {files}")
+            sys.exit(1)
+        print(f"Vault OK: files_scanned={files}")
         print("All tests passed.")
     else:
         mcp.run(transport="stdio")

@@ -29,6 +29,7 @@ def build_actionable_briefing(
     merge: Dict[str, Any],
     whatif: Dict[str, Any],
     period_compare: Optional[Dict[str, Any]] = None,
+    smart: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     days = analysis.get("unique_dates", 0)
     files = analysis.get("files_scanned", 0)
@@ -89,6 +90,65 @@ def build_actionable_briefing(
             "action": "Check if a life event explains the shift.",
             "why_not_llm": "Computed window comparison on your timeline — not a vague 'how have you been feeling'.",
         })
+
+    # Personal intelligence layer (baselines, weekday, attention)
+    if smart:
+        for att in smart.get("attention_now", [])[:2]:
+            insights.append({
+                "rank": len(insights) + 1,
+                "headline": att.get("headline", "Personal attention signal"),
+                "detail": att.get("detail", ""),
+                "evidence_date": att.get("evidence_date", ""),
+                "evidence_quote": (att.get("evidence_quote") or "")[:140],
+                "action": att.get("action", "Track this week and note triggers."),
+                "why_not_llm": "Compared to YOUR rolling baseline — not population 'normal' ranges.",
+                "source": "smart_attention",
+            })
+
+        for w in smart.get("weekday_effects", [])[:1]:
+            ex_date = (w.get("example_dates") or [""])[0]
+            insights.append({
+                "rank": len(insights) + 1,
+                "headline": f"{_label(w['signal']).title()} spikes on {w['weekday_name']}s for you",
+                "detail": (
+                    f"On {w['weekday_name']}s: {w['weekday_freq']:.0%} vs your overall {w['overall_freq']:.0%} "
+                    f"(lift {w['lift']}×, {w['occurrences']} occurrences)."
+                ),
+                "evidence_date": ex_date,
+                "evidence_quote": "",
+                "action": f"Plan recovery or lighter load on {w['weekday_name']} if pattern continues.",
+                "why_not_llm": "Your weekday histogram from local vault — ChatGPT doesn't know your Mon vs Fri pattern.",
+                "source": "weekday_effect",
+            })
+
+        ranked = smart.get("ranked_correlations") or []
+        if ranked and ranked[0].get("composite_score", 0) > 0.5:
+            top = ranked[0]
+            cite = (top.get("citations") or [{}])[0]
+            if not any(i.get("headline", "").startswith(_label(top.get("cause", "")).title()) for i in insights[:3]):
+                insights.append({
+                    "rank": len(insights) + 1,
+                    "headline": f"Strongest personal link: {_label(top.get('cause', ''))} → {_label(top.get('effect', ''))}",
+                    "detail": (
+                        f"Composite score {top.get('composite_score')} "
+                        f"(consistency {top.get('consistency', 0):.0%}, lift {top.get('lift_ratio')}×)."
+                    ),
+                    "evidence_date": cite.get("date", ""),
+                    "evidence_quote": (cite.get("excerpt") or "")[:140],
+                    "action": "Bring this ranked chain to your doctor with dated notes.",
+                    "why_not_llm": "Multi-factor ranking on your timeline — not single lift heuristic.",
+                    "source": "smart_correlation_rank",
+                })
+
+    # Re-rank: lead with cited correlations (pitch moat), then attention/weekday
+    priority = {
+        "smart_correlation_rank": 1,
+        "weekday_effect": 2,
+        "smart_attention": 3,
+    }
+    insights.sort(key=lambda x: (priority.get(x.get("source"), 0), x.get("rank", 99)))
+    for i, ins in enumerate(insights[:8], 1):
+        ins["rank"] = i
 
     one_liner = insights[0]["headline"] if insights else "Collect more daily notes to surface personal patterns."
 

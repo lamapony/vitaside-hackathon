@@ -22,3 +22,8 @@ code/health-mcp-starter/out/
 code/health-mcp-starter/audit.log
 code/health-mcp-starter/sidecars/*/manifest.yaml
 .codebase-memory/
+
+# Local dashboard
+code/health-mcp-starter/ui/node_modules/
+code/health-mcp-starter/ui/dist/
+code/health-mcp-starter/local-data/

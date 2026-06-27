@@ -12,6 +12,29 @@ except ImportError:
     HAS_SCIPY = False
 
 
+def apply_fdr(correlations: List[Dict]) -> List[Dict]:
+    """Benjamini–Hochberg q-values on exploratory p-values."""
+    indexed = [(i, c) for i, c in enumerate(correlations) if c.get("p_value") is not None]
+    if not indexed:
+        return correlations
+    m = len(indexed)
+    sorted_rows = sorted(indexed, key=lambda x: x[1]["p_value"])
+    q_assign: Dict[int, float] = {}
+    prev_q = 1.0
+    for rank, (idx, row) in enumerate(reversed(sorted_rows), start=1):
+        p = row["p_value"]
+        q = min(prev_q, p * m / (m - rank + 1))
+        q_assign[idx] = round(q, 4)
+        prev_q = q
+    out = []
+    for i, c in enumerate(correlations):
+        row = dict(c)
+        if i in q_assign:
+            row["q_value"] = q_assign[i]
+        out.append(row)
+    return out
+
+
 def add_pvalues(correlations: List[Dict], n_days: int) -> List[Dict]:
     if not HAS_SCIPY or n_days < 14:
         return correlations

@@ -16,3 +16,31 @@ sidecars:
       - analyze_patterns
       - weekly_summary
       - generate_doctor_report
+  bipolar-monitoring-sidecar:
+    description: Mood, sleep, irritability & medication mentions (bipolar pack)
+    default: false
+    condition_pack: bipolar
+    tools:
+      - track_condition
+      - condition_report
+      - generate_doctor_report
+      - weekly_summary_report
+  migraine-tracking-sidecar:
+    description: Headache episodes, acute meds & trigger lags (migraine pack)
+    default: false
+    condition_pack: migraine
+    tools:
+      - track_condition
+      - condition_report
+      - generate_doctor_report
+      - compare_periods
+  azure-hybrid-sidecar:
+    description: Optional Azure OpenAI insight boost + share-report hook
+    default: false
+    enable_azure_boost: true
+    tools:
+      - get_azure_contract
+      - preview_azure_payload
+      - azure_enhance_insight
+      - azure_share_report
+      - get_actionable_briefing

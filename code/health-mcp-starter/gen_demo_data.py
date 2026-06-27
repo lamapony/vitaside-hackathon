@@ -65,6 +65,23 @@ FRAGMENTS = {
     "social": [
         "Встретился с друзьями, хороший разговор.",
     ],
+    # Condition-pack demo phrases (bipolar / migraine tracking)
+    "migraine_episode": [
+        "Пульсирующая мигрень с утра, выпил ибупрофен.",
+        "Головная боль не проходит, принял суматриптан.",
+        "Мигрень, тошнота, лёг в тёмную комнату.",
+    ],
+    "bipolar_med": [
+        "Принял литий утром как обычно.",
+        "Выпил лекарство, всё по расписанию.",
+    ],
+    "bipolar_elevated": [
+        "Мало спал но бодр — три часа сна и полон энергии.",
+        "Прилив сил, не могу уснуть от идей, на взводе.",
+    ],
+    "bipolar_irritable": [
+        "Раздражительность на мелочи, срываюсь на всех.",
+    ],
 }
 
 
@@ -117,13 +134,27 @@ def build_day_signals(rng, day_idx, history):
     elif flags["exercise"] and rng.random() < 0.5:
         frags.append(pick(rng, "mood_good"))
 
-    # Stress streak (2 days) -> headache
+    # Stress streak (2 days) -> headache / migraine
     prev_stress = prev and prev.get("stress")
-    if flags["stress"] and prev_stress and rng.random() < 0.5:
+    if flags["stress"] and prev_stress:
+        if rng.random() < 0.72:
+            frags.append(pick(rng, "symptom_pain"))
+        if rng.random() < 0.35:
+            frags.append(pick(rng, "migraine_episode"))
+    elif flags["stress"] and rng.random() < 0.08:
         frags.append(pick(rng, "symptom_pain"))
-
     if rng.random() < 0.2:
         frags.append(pick(rng, "social"))
+
+    # Standalone migraine / headache days (~12% for journal demo)
+    if rng.random() < 0.12:
+        frags.append(pick(rng, "migraine_episode"))
+    if rng.random() < 0.12:
+        frags.append(pick(rng, "bipolar_med"))
+    if rng.random() < 0.06:
+        frags.append(pick(rng, "bipolar_elevated"))
+    if rng.random() < 0.05:
+        frags.append(pick(rng, "bipolar_irritable"))
 
     return frags, flags
 

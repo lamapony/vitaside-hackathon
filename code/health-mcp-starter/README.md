@@ -20,6 +20,32 @@ npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" generate_doctor_report --timeout 30000
 ```
 
+## Local Dashboard UI
+
+```bash
+./setup.sh          # creates .venv and installs requirements
+./serve-ui.sh       # uses .venv/bin/python when present
+```
+
+Откроется локальный dashboard на `http://127.0.0.1:5173`: top insights с цитатами,
+ручной профиль/контекст, timeline, condition packs (`migraine` / `bipolar`) и
+doctor handoff. API работает локально на `http://127.0.0.1:8787`; сырые Omi/Apple
+данные не отправляются в сеть.
+
+Ручной контекст сохраняется локально в `local-data/user_context.json`:
+- профиль и текущая цель;
+- состояния/диагнозы, которые пользователь хочет отслеживать;
+- лекарства и расписание;
+- быстрые записи вроде “голова 7/10, принял ибупрофен”.
+
+**Автозаполнение:** вкладка *My context* предлагает meds/conditions/goals из Omi-записей.
+Кнопка *Apply to empty fields* заполняет пустые поля; ручные правки помечаются `manual` и не перезаписываются.
+
+**Command center:** главная вкладка показывает *Where to go next* — конкретные шаги на неделю.
+
+При `Generate bundle` создаётся дополнительный файл `out/vitaside-user-context-*.md`
+для визита к врачу.
+
 ## Подключение к Hermes (постоянно)
 
 Добавь в `~/.hermes/config.yaml`:

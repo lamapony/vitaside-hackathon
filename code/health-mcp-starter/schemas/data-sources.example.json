@@ -1,0 +1,38 @@
+{
+  "version": "1.1",
+  "data_mode": "demo",
+  "vault_path": "code/health-mcp-starter/demo-data/vault",
+  "summary": {
+    "connected_sources": ["omi_vault", "sidecar_manifest", "host_context", "condition_packs", "audit_log"],
+    "needs_setup": ["apple_health", "azure_boost"],
+    "primary_source": "omi_vault",
+    "optional_enrichment": ["apple_health", "host_context", "condition_packs"]
+  },
+  "sources": [
+    {
+      "id": "omi_vault",
+      "status": "connected",
+      "label_ru": "Ежедневные разговоры Omi (Obsidian vault)",
+      "resolved_path": ".../demo-data/vault",
+      "stats": { "total_md_files": 84, "search_roots": [".../050 Daily Omi/Conversations"] },
+      "provides": ["signals", "dated excerpts / citations", "sleep_quality"],
+      "setup_steps_ru": ["export OMI_VAULT_PATH=/путь/к/vault"]
+    },
+    {
+      "id": "apple_health",
+      "status": "demo_fallback",
+      "label_ru": "Экспорт Apple Health (export.xml)",
+      "stats": { "mode": "demo_daily" },
+      "setup_steps_ru": ["Здоровье → Экспорт → ~/Downloads/apple_health_export/"]
+    }
+  ],
+  "analysis_pipeline": [
+    { "step": 1, "id": "resolve_vault", "inputs": ["omi_vault"], "name_ru": "Выбор vault" },
+    { "step": 3, "id": "parse_omi", "inputs": ["omi_vault"], "outputs": ["entries[]", "signals[]"] },
+    { "step": 6, "id": "smart_layer", "inputs": ["entries", "apple_health"], "name_ru": "Персональный intelligence-слой" }
+  ],
+  "tool_resource_map": {
+    "analyze_lifestyle_patterns": ["omi_vault", "sidecar_manifest", "apple_health", "audit_log"],
+    "smart_analysis": ["omi_vault", "apple_health", "sidecar_manifest"]
+  }
+}

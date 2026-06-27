@@ -41,9 +41,10 @@ quality_gates:
 3. `generate_report(format: "markdown"|"json"|"html", include_timeline: bool)` -> report
 
 ## Collaboration Protocol (Simple)
-- Host calls sidecar tool.
-- Sidecar may return "needs_context: {calendar_stress}" 
-- Host provides or main agent fills.
+- Host calls sidecar tool (e.g. `collaborative_insight`).
+- Sidecar may return `needs_context: { "calendar": true }` when life-event context is missing.
+- Host re-calls with `host_context.events[]` where each event has `date`, `type` (`travel` | `deadline`), optional `note`.
+- See `code/health-mcp-starter/docs/COLLABORATION.md` for full request/response shapes and mcporter examples.
 
 ## Privacy & Security
 - Scoped paths only.

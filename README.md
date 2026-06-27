@@ -5,6 +5,8 @@
 
 ## Quick Start
 
+From repo root: `./scripts/vitaside test` (acceptance suite).
+
 ```bash
 cd code/health-mcp-starter
 ./setup.sh
@@ -67,3 +69,33 @@ MCP config template: `code/health-mcp-starter/mcp-config.example.json`
 | `generate_doctor_report(format="obsidian")` | Obsidian visit prep note |
 
 **Version:** MVP 1.0 + Product Sprints P1–P4
+## Frontend (recreated via OpenDesign)
+
+The local dashboard UI (Vite + React) has been fully recreated with OpenDesign principles:
+- Design tokens (colors, spacing, radius, typography)
+- Consistent component library (cards, pills, nav)
+- Lucide icons
+- Calm dark theme optimized for long reading of personal data
+- Sidebar + tab navigation matching the core flows
+
+```bash
+cd code/health-mcp-starter/ui
+npm run dev
+```
+
+The UI talks to `api_server.py` (FastAPI wrapper over the MCP tools).
+
+Static HTML reports are still generated in `out/` for doctor handoff (can be opened directly or viewed via the "Doctor handoff" tab).
+
+## Skin photo preliminary check (new)
+Optional external-service boost for skin concerns (e.g. mole/melanoma awareness before doctor).
+- Local ABCDE-inspired analysis (asymmetry, border, color, size) using PIL.
+- Requires explicit `user_consent`.
+- Optional `use_external` for richer analysis (stub + hybrid like Azure).
+- Strong disclaimers everywhere.
+- UI upload in Doctor handoff tab.
+- Tool: `analyze_skin_photo(image_path, user_consent, use_external)`
+- Privacy: image stays local unless consented; only hash + features sent if external.
+Example:
+npx mcporter call --stdio python3 health-pattern-mcp.py analyze_skin_photo --image_path /tmp/photo.jpg --user_consent true
+

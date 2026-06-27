@@ -1,0 +1,53 @@
+# Migraine & headache self-monitoring
+id: migraine
+name: "Migraine — episodes, meds & triggers"
+description: >
+  Log headache/migraine days, medications taken, and possible triggers
+  from voice notes + wearables for visit prep with neurologist/GP.
+disclaimer: >
+  Headache pattern tracking only — not a diagnosis of migraine type or
+  treatment recommendation.
+
+signals:
+  headache:
+    keywords: '\b(мигрен|головн[а-я]* боль|болит голова|headache|migraine|пульсиру[юе]т|aura|ауra|тошн.*голов|свет.*глаз.*бол|phonophob)\b'
+    weight: 1.3
+  med_triptan:
+    keywords: '\b(суматриптан|sumatriptan|имитrex|imitrex|zomig|релpax|triptan|триптан)\b'
+    weight: 1.2
+  med_ibuprofen:
+    keywords: '\b(ибупрофен|ibuprofen|найз|nurofen|адвил|adv|парацетамол|paracetamol|aspirin|аспирин|обезбол)\b'
+    weight: 1.0
+  med_preventive:
+    keywords: '\b(топирамат|topiramate|propranolol|пропранолол|amitriptyline|амитриптилин|ботокс.*мигрен|preventive)\b'
+    weight: 1.1
+  nausea:
+    keywords: '\b(тошн[о-я]| nausea|рвот)\b'
+    weight: 0.9
+
+track_items:
+  - id: headache_episode
+    label: "Headache / migraine day"
+    signals: [headache, symptom_pain]
+  - id: acute_medication
+    label: "Acute meds taken"
+    signals: [med_triptan, med_ibuprofen]
+  - id: preventive_medication
+    label: "Preventive meds"
+    signals: [med_preventive]
+  - id: triggers
+    label: "Possible triggers (from notes)"
+    signals: [sleep, stress, caffeine_alcohol, sleep_reduced]
+
+metrics:
+  - id: episodes_per_month
+    label: "Headache/migraine signal days per 30d"
+  - id: med_same_day
+    label: "Headache days with medication mention same day"
+  - id: trigger_lags
+    label: "Stress/sleep/caffeine 1–2 days before headache"
+
+doctor_focus:
+  - "Frequency of headache days and acute medication use"
+  - "Common preceding-day patterns (sleep, stress, caffeine)"
+  - "Preventive medication mentions vs episode frequency"

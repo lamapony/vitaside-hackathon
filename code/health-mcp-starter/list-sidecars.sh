@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/venv-python.sh"
 REG="$ROOT/sidecars/registry.yaml"
 echo "=== VitaSide Sidecars ==="
 if [[ -f "$REG" ]]; then
-  python3 - <<PY
+  "$PYTHON" - <<PY
 import yaml
 from pathlib import Path
 r = yaml.safe_load(Path("$REG").read_text())

@@ -1,0 +1,76 @@
+{
+  "contract_version": "1.0",
+  "generated_at": "2026-06-27T12:00:00+00:00",
+  "sidecar": {
+    "name": "azure-hybrid-sidecar",
+    "issuer": "doctor@example.com",
+    "version": "0.1"
+  },
+  "consent": {
+    "granted": true,
+    "operation": "enhance_insight",
+    "locale": "ru"
+  },
+  "data_minimization": {
+    "raw_transcripts": false,
+    "vault_paths": false,
+    "anonymized": true,
+    "max_excerpt_chars": 140,
+    "payload_fingerprint": "abc123def4567890"
+  },
+  "local_summary": {
+    "days_analyzed": 84,
+    "files_scanned": 90,
+    "signal_counts": {
+      "sleep": 12,
+      "stress": 18,
+      "mood_low": 9
+    },
+    "temporal_correlations": [
+      {
+        "cause": "sleep",
+        "effect": "stress",
+        "lag": 1,
+        "probability": 0.62,
+        "lift_ratio": 2.1,
+        "confidence": 0.78,
+        "example_dates": ["2026-04-01", "2026-04-08"],
+        "sample_citation": {
+          "date": "2026-04-02",
+          "excerpt": "Тревога и напряжение, переживаю из-за дедлайна."
+        }
+      }
+    ],
+    "top_insights": [
+      {
+        "rank": 1,
+        "headline": "Sleep issues → Stress about 1 day(s) later",
+        "detail": "In 4+ dated note chains…",
+        "evidence_date": "2026-04-02",
+        "evidence_quote": "Тревога и напряжение…",
+        "action": "Track whether reducing sleep issues changes stress next week."
+      }
+    ],
+    "whatif": {
+      "intervention": "consistent_sleep_7_5h",
+      "duration_days": 14,
+      "confidence": 0.72,
+      "projected_outcomes": [],
+      "disclaimer": "Historical simulation only."
+    },
+    "condition_tracking": {
+      "condition_id": "migraine",
+      "condition_name": "Migraine — episodes, meds & triggers",
+      "days_analyzed": 84,
+      "track_items": [],
+      "metrics": [],
+      "doctor_focus": [],
+      "citations": []
+    }
+  },
+  "request": {
+    "operation": "enhance_insight",
+    "locale": "ru",
+    "prompt_hint": ""
+  }
+}

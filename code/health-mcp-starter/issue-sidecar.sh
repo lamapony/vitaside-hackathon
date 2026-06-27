@@ -2,13 +2,50 @@
 # Issue a VitaSide sidecar bundle (manifest + server pointer)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/venv-python.sh"
 NAME="${1:-sleep-stress-sidecar}"
 BUNDLE="$ROOT/sidecars/$NAME"
 MANIFEST="$BUNDLE/manifest.yaml"
+CONDITION_PACK=""
+EXTRA_TOOLS=""
 
 case "$NAME" in
   recovery-sidecar)
     DESC="Post-viral / fatigue recovery pattern sidecar"
+    ;;
+  bipolar-monitoring-sidecar)
+    DESC="Bipolar mood, sleep & medication self-monitoring sidecar"
+    CONDITION_PACK="bipolar"
+    EXTRA_TOOLS="
+  - list_condition_packs
+  - track_condition
+  - condition_report"
+    ;;
+  migraine-tracking-sidecar)
+    DESC="Migraine episodes, acute meds & trigger pattern sidecar"
+    CONDITION_PACK="migraine"
+    EXTRA_TOOLS="
+  - list_condition_packs
+  - track_condition
+  - condition_report"
+    ;;
+  azure-hybrid-sidecar)
+    DESC="Local-first patterns + optional Azure OpenAI / share boost"
+    EXTRA_TOOLS="
+  - get_azure_contract
+  - preview_azure_payload
+  - azure_enhance_insight
+  - azure_share_report"
+    AZURE_BLOCK="
+enable_azure_boost: true
+azure:
+  allowed_operations:
+    - enhance_insight
+    - share_report
+  data_policy:
+    max_excerpt_chars: 140
+    anonymize_by_default: true"
     ;;
   *)
     DESC="Sleep-stress-metabolism pattern sidecar for VitaSide protocol demo"
@@ -21,6 +58,12 @@ VAULT="${OMI_VAULT_PATH:-$ROOT/demo-data/vault}"
 ISSUER="${VITASIDE_ISSUER:-doctor@example.com}"
 TTL="${VITASIDE_TTL:-30d}"
 
+CONDITION_LINE=""
+if [[ -n "$CONDITION_PACK" ]]; then
+  CONDITION_LINE="condition_pack: \"$CONDITION_PACK\""
+fi
+AZURE_BLOCK="${AZURE_BLOCK:-}"
+
 cat > "$MANIFEST" <<EOF
 name: "$NAME"
 version: "0.1"
@@ -28,6 +71,8 @@ description: "$DESC"
 issuer: "$ISSUER"
 ttl: "$TTL"
 issued_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+$CONDITION_LINE
+$AZURE_BLOCK
 allowed_scopes:
   - path: "$VAULT/050 Daily Omi"
     permissions: ["read"]
@@ -36,13 +81,13 @@ tools:
   - simulate_whatif
   - generate_doctor_report
   - find_correlation
-  - list_data_sources
+  - list_data_sources$EXTRA_TOOLS
 quality_gates:
   - always_include_confidence
   - always_cite_sources
   - include_disclaimer
 server:
-  command: python3
+  command: $PYTHON
   args: ["$ROOT/health-pattern-mcp.py"]
 EOF
 
@@ -50,18 +95,24 @@ echo "=== VitaSide Sidecar Issued ==="
 echo "Name:   $NAME"
 echo "Bundle: $BUNDLE"
 echo "TTL:    $TTL"
+[[ -n "$CONDITION_PACK" ]] && echo "Pack:   $CONDITION_PACK"
 echo ""
 echo "Add to Hermes / Cursor MCP config:"
 echo ""
+ENV_BLOCK=""
+if [[ -n "$CONDITION_PACK" ]]; then
+  ENV_BLOCK=",
+        \"VITASIDE_CONDITION_PACK\": \"$CONDITION_PACK\""
+fi
 cat <<CFG
 {
   "mcpServers": {
     "vitaside-$NAME": {
-      "command": "python3",
+      "command": "$PYTHON",
       "args": ["$ROOT/health-pattern-mcp.py"],
       "env": {
         "VITASIDE_MANIFEST": "$MANIFEST",
-        "OMI_VAULT_PATH": "$VAULT"
+        "OMI_VAULT_PATH": "$VAULT"$ENV_BLOCK
       }
     }
   }
@@ -71,4 +122,5 @@ echo ""
 echo "Or export and run:"
 echo "  export VITASIDE_MANIFEST=\"$MANIFEST\""
 echo "  export OMI_VAULT_PATH=\"$VAULT\""
-echo "  python3 $ROOT/health-pattern-mcp.py"
+[[ -n "$CONDITION_PACK" ]] && echo "  export VITASIDE_CONDITION_PACK=\"$CONDITION_PACK\""
+echo "  $PYTHON $ROOT/health-pattern-mcp.py"

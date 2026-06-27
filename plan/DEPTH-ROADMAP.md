@@ -50,9 +50,10 @@
 
 - [x] Exploratory p-values on lag correlations
 - [x] Weekly summary + period compare tools
-- [ ] Personal baseline bands (not global thresholds)
-- [ ] Seasonal / weekday effects
-- [ ] Optional LLM layer for narrative (MCP sampling) — **always cite sources**
+- [x] Personal baseline bands (not global thresholds)
+- [x] Weekday / weekend effects
+- [x] Local cite-grounded narrative (`narrative_engine.py`) — always cite sources
+- [ ] Optional LLM layer for narrative (MCP sampling / Azure live) — stub uses local engine
 
 **Not now:** ML diagnosis, risk scores, government/regulatory path.
 

@@ -45,6 +45,7 @@ table{{width:100%;border-collapse:collapse;margin:16px 0;font-size:.85rem}}
 th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
 th{{background:#f1f5f9}}
 .disclaimer{{background:#fef3c7;padding:12px;border-radius:6px;font-size:.85rem;margin-top:24px}}
+@media print{{body{{margin:0}} .section{{break-inside:avoid}}}}
 .section{{margin:24px 0}}
 </style></head><body>
 <h1>Patient Pattern Summary (Doctor View)</h1>

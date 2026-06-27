@@ -47,4 +47,23 @@ MCP config template: `code/health-mcp-starter/mcp-config.example.json`
 | `docs/SPEC.md` | Protocol spec |
 | `pitch/DEMO-SCRIPT.md` | Live demo script |
 
-**Disclaimer:** Personal lifestyle patterns only — not a medical diagnosis.
+## New commands
+
+```bash
+./export-for-doctor.sh          # full visit bundle → out/
+./export-for-doctor.sh --anon   # anonymized excerpts
+./list-sidecars.sh
+./revoke-sidecar.sh sleep-stress-sidecar
+```
+
+## New MCP tools
+
+| Tool | Purpose |
+|---|---|
+| `generate_visit_questions` | Doctor visit discussion topics |
+| `weekly_summary_report` | Signals by ISO week |
+| `compare_periods` | Last N days vs prior N days |
+| `export_visit_bundle` | HTML + Obsidian + questions |
+| `generate_doctor_report(format="obsidian")` | Obsidian visit prep note |
+
+**Version:** MVP 1.0 + Product Sprints P1–P4

@@ -1,0 +1,18 @@
+# VitaSide sidecar registry — issue with: ./issue-sidecar.sh <name>
+version: "1.0"
+sidecars:
+  sleep-stress-sidecar:
+    description: Sleep, stress, mood patterns from Omi + Apple
+    default: true
+    tools:
+      - analyze_patterns
+      - simulate_whatif
+      - generate_doctor_report
+      - collaborative_insight
+  recovery-sidecar:
+    description: Post-viral / fatigue recovery tracking
+    default: false
+    tools:
+      - analyze_patterns
+      - weekly_summary
+      - generate_doctor_report

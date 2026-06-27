@@ -111,8 +111,28 @@ def audit_summary(limit: int = 20) -> Dict[str, Any]:
     return {"entries": len(lines), "recent": recent, "tools_used": tools, "unique_files": len(files)}
 
 
+def is_revoked(manifest: Dict[str, Any]) -> bool:
+    return bool(manifest.get("revoked_at"))
+
+
+def revoke_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
+    path = Path(path or os.getenv("VITASIDE_MANIFEST", DEFAULT_MANIFEST))
+    if not path.exists():
+        raise FileNotFoundError(str(path))
+    raw = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(raw) if yaml else json.loads(raw)
+    data["revoked_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    text = yaml.dump(data, allow_unicode=True, sort_keys=False) if yaml else json.dumps(data, indent=2)
+    path.write_text(text, encoding="utf-8")
+    audit("sidecar_revoked", {"manifest": str(path), "name": data.get("name")})
+    return data
+
+
 def assert_sidecar_active(manifest: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     m = manifest or load_manifest()
+    if is_revoked(m):
+        audit("sidecar_revoked_access", {"manifest": m.get("name")})
+        raise RuntimeError(f"Sidecar '{m.get('name')}' was revoked at {m.get('revoked_at')}")
     if is_expired(m):
         audit("sidecar_expired", {"manifest": m.get("name")})
         raise RuntimeError(f"Sidecar '{m.get('name')}' expired at {m.get('_expires_at')}")

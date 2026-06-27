@@ -29,6 +29,10 @@ def parse_daily(xml_path: Optional[Path], limit_records: int = 8000) -> Dict[str
     if not xml_path or not xml_path.exists():
         return demo_daily()
 
+    size_mb = xml_path.stat().st_size / (1024 * 1024)
+    if size_mb > 50:
+        return _parse_daily_iterparse(xml_path)
+
     by_date: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
     try:
         tree = ET.parse(xml_path)
@@ -50,6 +54,55 @@ def parse_daily(xml_path: Optional[Path], limit_records: int = 8000) -> Dict[str
             elif "HeartRateVariabilitySDNN" in t:
                 by_date[start]["hrv_sdnn"].append(v)
             elif "SleepAnalysis" in t or "Sleep" in t:
+                by_date[start]["sleep_minutes"].append(v if v < 24 else v / 60)
+    except ET.ParseError:
+        return demo_daily()
+
+    out: Dict[str, Dict[str, float]] = {}
+    for d, metrics in by_date.items():
+        row: Dict[str, float] = {}
+        if metrics.get("heart_rate_avg"):
+            row["heart_rate_avg"] = round(sum(metrics["heart_rate_avg"]) / len(metrics["heart_rate_avg"]), 1)
+        if metrics.get("steps"):
+            row["steps"] = sum(metrics["steps"])
+        if metrics.get("hrv_sdnn"):
+            row["hrv_sdnn"] = round(sum(metrics["hrv_sdnn"]) / len(metrics["hrv_sdnn"]), 1)
+        if metrics.get("sleep_minutes"):
+            row["sleep_hours"] = round(sum(metrics["sleep_minutes"]) / 60, 2)
+        if row:
+            out[d] = row
+    return out or demo_daily()
+
+
+def _parse_daily_iterparse(xml_path: Path) -> Dict[str, Dict[str, float]]:
+    """Stream-parse large Apple Health exports without loading full tree."""
+    by_date: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
+    count = 0
+    try:
+        for _event, elem in ET.iterparse(xml_path, events=("end",)):
+            if elem.tag != "Record":
+                elem.clear()
+                continue
+            count += 1
+            if count > 200_000:
+                break
+            t = elem.get("type", "")
+            val = elem.get("value")
+            start = (elem.get("startDate") or "")[:10]
+            elem.clear()
+            if not start or not val:
+                continue
+            try:
+                v = float(val)
+            except ValueError:
+                continue
+            if "HeartRate" in t:
+                by_date[start]["heart_rate_avg"].append(v)
+            elif "StepCount" in t:
+                by_date[start]["steps"].append(v)
+            elif "HeartRateVariabilitySDNN" in t:
+                by_date[start]["hrv_sdnn"].append(v)
+            elif "Sleep" in t:
                 by_date[start]["sleep_minutes"].append(v if v < 24 else v / 60)
     except ET.ParseError:
         return demo_daily()

@@ -51,6 +51,15 @@ check("collaboration insight", len(col.get("collaborative_insight", "")) > 50)
 status = m.get_sidecar_status()
 check("sidecar active", not status.get("expired"))
 
+qs = m.generate_visit_questions()
+check("visit questions", qs.get("count", 0) >= 1)
+
+wk = m.weekly_summary_report()
+check("weekly summary", wk.get("week_count", 0) >= 1)
+
+bundle = m.export_visit_bundle()
+check("visit bundle", bundle.get("questions_count", 0) >= 1)
+
 print()
 if FAIL:
     print(f"FAILED: {FAIL} checks")

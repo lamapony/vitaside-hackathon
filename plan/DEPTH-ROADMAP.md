@@ -16,8 +16,9 @@
 
 **Tech:**
 - [x] Daily Omi↔Apple merge (`apple_merge.py`)
-- [ ] SAX/iterparse для больших export.xml (>100MB)
-- [ ] Obsidian note export из `generate_doctor_report`
+- [x] Large export iterparse (>50MB)
+- [x] Obsidian note export (`format=obsidian`)
+- [ ] Еженедельный ритуал (process, not code)
 
 ---
 
@@ -26,23 +27,20 @@
 **Goal:** Пациент → один файл → врач понимает за 3 минуты.
 
 - [x] Doctor view HTML (`report_doctor.py`)
-- [ ] PDF export (weasyprint или browser print)
-- [ ] One-pager: «Questions to ask your doctor» auto-generated
-- [ ] Anonymization mode (strip names from excerpts)
-
-**Metric:** 1 врач посмотрел отчёт и сказал «удобнее сырых экспортов».
+- [x] Visit questions auto-generated
+- [x] `export-for-doctor.sh` bundle
+- [x] Anonymization mode (`anonymize=True`)
+- [ ] PDF export (browser print / weasyprint)
 
 ---
 
-## Phase D3 — Sidecar Ecosystem (2–3 months)
-
-**Goal:** Не один sidecar, а протокол.
+## Phase D3 — Sidecar Ecosystem
 
 - [x] Template: sleep-stress-sidecar
 - [x] Template: recovery-sidecar
-- [ ] Sidecar registry (`sidecars/registry.yaml`)
-- [ ] Parallel sidecars (sleep + metabolic) без конфликта scopes
-- [ ] Version pinning + revoke в manifest
+- [x] Sidecar registry (`sidecars/registry.yaml`)
+- [x] Revoke sidecar (`revoke-sidecar.sh`)
+- [ ] Parallel sidecars without scope conflict (manual for now)
 
 ---
 
@@ -50,7 +48,8 @@
 
 **Only after D1 has 60+ real days.**
 
-- [ ] Proper p-values on lag correlations (scipy)
+- [x] Exploratory p-values on lag correlations
+- [x] Weekly summary + period compare tools
 - [ ] Personal baseline bands (not global thresholds)
 - [ ] Seasonal / weekday effects
 - [ ] Optional LLM layer for narrative (MCP sampling) — **always cite sources**

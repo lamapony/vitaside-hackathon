@@ -27,10 +27,15 @@ from sidecar_protocol import (
     audit,
     audit_summary,
     is_expired,
+    is_revoked,
 )
 from report_html import generate_html_report
 from report_doctor import generate_doctor_view
 from apple_merge import parse_daily, merge_with_omi
+from anonymize import anonymize_text, anonymize_citations
+from visit_questions import generate_visit_questions as build_visit_questions
+from export_obsidian import build_obsidian_note
+from analytics_depth import add_pvalues, weekly_summary, compare_periods as compare_periods_analysis
 
 _MANIFEST: Optional[Dict[str, Any]] = None
 
@@ -239,33 +244,51 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
     except Exception as e:
         return None
 
+def _omi_search_paths(vault: Path) -> List[Path]:
+    paths: List[Path] = []
+    for part in os.getenv("VITASIDE_OMI_PATHS", "").split(":"):
+        if part.strip():
+            p = Path(part.strip()).expanduser()
+            if p.exists():
+                paths.append(p)
+    for rel in ("050 Daily Omi/Conversations", "050 Daily Omi", "Daily Notes", "Journal", "Health"):
+        p = vault / rel
+        if p.exists() and p not in paths:
+            paths.append(p)
+    return paths or [vault]
+
+
+def _parseable_count(vault: Path, cap: int = 200) -> int:
+    files: List[Path] = []
+    for base in _omi_search_paths(vault):
+        files.extend(base.rglob("*.md"))
+    files = files[:cap]
+    return sum(1 for f in files if _parse_omi_file(f))
+
+
 def _resolve_vault() -> Path:
-    """Use demo vault automatically when the configured vault has no parseable notes."""
+    """Explicit OMI_VAULT_PATH is never silently replaced by demo data."""
     global OMI_VAULT_PATH
-    for vault in (_DEFAULT_VAULT, _DEMO_VAULT):
-        conv = vault / "050 Daily Omi" / "Conversations"
-        if conv.exists() and any(conv.rglob("*.md")):
-            OMI_VAULT_PATH = vault
-            return vault
-    OMI_VAULT_PATH = _DEFAULT_VAULT
-    return _DEFAULT_VAULT
+    explicit = "OMI_VAULT_PATH" in os.environ
+    if explicit:
+        OMI_VAULT_PATH = _DEFAULT_VAULT
+        return _DEFAULT_VAULT
+    if _parseable_count(_DEFAULT_VAULT) >= 3:
+        OMI_VAULT_PATH = _DEFAULT_VAULT
+        return _DEFAULT_VAULT
+    OMI_VAULT_PATH = _DEMO_VAULT
+    return _DEMO_VAULT
 
 
 def _scan_omi(limit: int = 100, tool: str = "scan_omi") -> List[Dict]:
     assert_sidecar_active(_get_manifest())
     vault = _resolve_vault()
     manifest = _get_manifest()
-    candidates = [
-        vault / "050 Daily Omi" / "Conversations",
-        vault / "050 Daily Omi" / "telegram-extracts",
-    ]
-    files = []
-    for base in candidates:
-        if base.exists():
-            files.extend(list(base.rglob("*.md")))
-    files = sorted(files, key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)[: limit * 2]
-    allowed_files = [f for f in files if check_scope(manifest, f)]
-    allowed_files = allowed_files[:limit]
+    files: List[Path] = []
+    for base in _omi_search_paths(vault):
+        files.extend(base.rglob("*.md"))
+    files = sorted(set(files), key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+    allowed_files = [f for f in files if check_scope(manifest, f)][:limit]
     parsed = [p for p in (_parse_omi_file(f) for f in allowed_files) if p]
     audit(tool, {"files": [str(f) for f in allowed_files], "count": len(parsed), "vault": str(vault)})
     return parsed
@@ -580,7 +603,7 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
     ts = _build_timeseries(entries)
     by_date = ts["by_date"]
     baseline = _compute_baseline_stats(ts)
-    temporal = _enrich_correlations(entries, _compute_temporal_correlations(ts))
+    temporal = _enrich_correlations(entries, add_pvalues(_compute_temporal_correlations(ts), len(by_date)))
     anomalies = _enrich_anomalies(entries, _compute_anomalies(entries, baseline))
     apple = analyze_apple_patterns()
 
@@ -591,6 +614,8 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
         "version": "1.0-mvp",
         "sidecar": manifest.get("name"),
         "sidecar_expired": is_expired(manifest),
+        "sidecar_revoked": is_revoked(manifest),
+        "data_mode": "explicit" if "OMI_VAULT_PATH" in os.environ else ("demo" if str(vault) == str(_DEMO_VAULT) else "auto"),
         "vault_path": str(vault),
         "time_range": time_range,
         "files_scanned": len(entries),
@@ -722,9 +747,12 @@ def collaborative_insight(host_context: dict = None) -> Dict[str, Any]:
     return _with_gates(_collaborative_insight_core(ctx))
 
 @mcp.tool()
-def generate_doctor_report(format: str = "markdown", include_whatif: bool = True) -> str:
+def generate_doctor_report(format: str = "markdown", include_whatif: bool = True, anonymize: bool = False) -> str:
     entries = _scan_omi(120, tool="generate_doctor_report")
     analysis = analyze_lifestyle_patterns()
+    if anonymize:
+        for c in analysis.get("temporal_correlations", []):
+            c["citations"] = anonymize_citations(c.get("citations", []))
     apple = analyze_apple_patterns()
     whatif = _simulate_whatif_core(entries, {
         "intervention": "consistent_sleep_7_5h",
@@ -754,8 +782,19 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         out_path = _SCRIPT_DIR / "out" / f"vitaside-doctor-{datetime.date.today()}.html"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(doc_html, encoding="utf-8")
-        audit("report_export", {"format": "doctor", "path": str(out_path)})
+        audit("report_export", {"format": "doctor", "path": str(out_path), "anonymized": anonymize})
         return doc_html
+
+    if format == "obsidian":
+        by_date = _entries_by_date(entries)
+        merge = merge_with_omi(by_date, parse_daily(_find_apple_export()))
+        questions = build_visit_questions(analysis, merge, whatif)
+        note = build_obsidian_note(analysis, questions, whatif, anonymized=anonymize)
+        out_path = _SCRIPT_DIR / "out" / f"vitaside-visit-prep-{datetime.date.today()}.md"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(note, encoding="utf-8")
+        audit("report_export", {"format": "obsidian", "path": str(out_path)})
+        return note
 
     lines = [
         f"# VitaSide Health Pattern Report v1.0",
@@ -774,6 +813,46 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         lines += ["", "## What-If", json.dumps(whatif["projected_outcomes"], ensure_ascii=False, indent=2)]
     lines += ["", f"**{DISCLAIMER}**"]
     return "\n".join(lines)
+
+@mcp.tool()
+def generate_visit_questions() -> Dict[str, Any]:
+    """Discussion topics for your next doctor visit, grounded in your patterns."""
+    entries = _scan_omi(120, tool="generate_visit_questions")
+    analysis = analyze_lifestyle_patterns()
+    merge = combine_omi_and_apple()
+    whatif = _simulate_whatif_core(entries, {"duration_days": 14, "target_signals": ["mood_low", "stress"]})
+    return _with_gates(build_visit_questions(analysis, merge, whatif))
+
+@mcp.tool()
+def weekly_summary_report() -> Dict[str, Any]:
+    """Roll up signal counts by ISO week for the last ~8 weeks."""
+    entries = _scan_omi(120, tool="weekly_summary")
+    return _with_gates(weekly_summary(entries))
+
+@mcp.tool()
+def compare_periods(recent_days: int = 14) -> Dict[str, Any]:
+    """Compare signal frequency: last N days vs the N days before that."""
+    entries = _scan_omi(120, tool="compare_periods")
+    return _with_gates(compare_periods_analysis(entries, recent_days))
+
+@mcp.tool()
+def export_visit_bundle(anonymize: bool = False) -> Dict[str, Any]:
+    """Generate doctor HTML + patient HTML + Obsidian note + questions in out/."""
+    generate_doctor_report(format="html", anonymize=anonymize)
+    generate_doctor_report(format="doctor", anonymize=anonymize)
+    generate_doctor_report(format="obsidian", anonymize=anonymize)
+    qs = generate_visit_questions()
+    today = datetime.date.today().isoformat()
+    return _with_gates({
+        "bundle_date": today,
+        "outputs": {
+            "patient_html": str(_SCRIPT_DIR / "out" / f"vitaside-report-{today}.html"),
+            "doctor_html": str(_SCRIPT_DIR / "out" / f"vitaside-doctor-{today}.html"),
+            "obsidian_note": str(_SCRIPT_DIR / "out" / f"vitaside-visit-prep-{today}.md"),
+        },
+        "questions_count": qs.get("count", 0),
+        "anonymized": anonymize,
+    })
 
 @mcp.tool()
 def combine_omi_and_apple() -> Dict[str, Any]:
@@ -799,6 +878,7 @@ def get_sidecar_status() -> Dict[str, Any]:
         "issuer": m.get("issuer"),
         "expires_at": m.get("_expires_at"),
         "expired": is_expired(m),
+        "revoked": is_revoked(m),
         "allowed_scopes": m.get("allowed_scopes", []),
         "tools": m.get("tools", []),
         "manifest_path": m.get("_manifest_path"),

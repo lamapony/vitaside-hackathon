@@ -1,6 +1,6 @@
 #!/opt/anaconda3/bin/python3
 """
-VitaSide Health Pattern MCP Server — v3.1 (Sprint 2–4)
+VitaSide Health Pattern MCP Server — v1.0 MVP
 - Improved Omi parser (timestamps, context words сегодня/вчера, speaker separation, quality scoring, time-of-day)
 - Apple Health XML parsing + demo
 - Temporal correlations (lags 1-3 days, lift, p-values via scipy)
@@ -29,6 +29,8 @@ from sidecar_protocol import (
     is_expired,
 )
 from report_html import generate_html_report
+from report_doctor import generate_doctor_view
+from apple_merge import parse_daily, merge_with_omi
 
 _MANIFEST: Optional[Dict[str, Any]] = None
 
@@ -54,7 +56,7 @@ except ImportError:
     HAS_SCIPY = False
     pd = np = sp_stats = None
 
-mcp = FastMCP("vitaside-health-patterns-v3")
+mcp = FastMCP("vitaside-health-mvp-1.0")
 
 DISCLAIMER = (
     "Personal lifestyle patterns only — not a medical diagnosis. "
@@ -568,6 +570,11 @@ def analyze_apple_patterns() -> Dict[str, Any]:
     }
 
 @mcp.tool()
+def analyze_patterns(time_range: str = "last_90_days") -> Dict[str, Any]:
+    """SPEC alias for analyze_lifestyle_patterns."""
+    return analyze_lifestyle_patterns(time_range)
+
+@mcp.tool()
 def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, Any]:
     entries = _scan_omi(120, tool="analyze_lifestyle_patterns")
     ts = _build_timeseries(entries)
@@ -581,7 +588,7 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
     vault = _resolve_vault()
     manifest = _get_manifest()
     return _with_gates({
-        "version": "3.1",
+        "version": "1.0-mvp",
         "sidecar": manifest.get("name"),
         "sidecar_expired": is_expired(manifest),
         "vault_path": str(vault),
@@ -739,8 +746,19 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         audit("report_export", {"format": "html", "path": str(out_path)})
         return html_out
 
+    if format == "doctor":
+        by_date = _entries_by_date(entries)
+        apple_daily = parse_daily(_find_apple_export())
+        merge = merge_with_omi(by_date, apple_daily)
+        doc_html = generate_doctor_view(analysis, merge, whatif, DISCLAIMER)
+        out_path = _SCRIPT_DIR / "out" / f"vitaside-doctor-{datetime.date.today()}.html"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(doc_html, encoding="utf-8")
+        audit("report_export", {"format": "doctor", "path": str(out_path)})
+        return doc_html
+
     lines = [
-        f"# VitaSide Health Pattern Report v3.1",
+        f"# VitaSide Health Pattern Report v1.0",
         f"",
         f"**Date:** {datetime.date.today()}",
         f"**Omi:** {analysis['files_scanned']} files, {analysis['unique_dates']} days",
@@ -760,24 +778,17 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
 @mcp.tool()
 def combine_omi_and_apple() -> Dict[str, Any]:
     entries = _scan_omi(120, tool="combine_omi_and_apple")
-    apple = load_apple_health_data()["data"]
-    omi_dates = {e["date"]: e for e in entries if e.get("date")}
-    merged_days = len(omi_dates)
-    overlap_insights = []
-    poor_sleep_days = [d for d, e in omi_dates.items() if e.get("sleep_quality") == "poor"]
-    if poor_sleep_days:
-        overlap_insights.append({
-            "pattern": "poor_sleep_days",
-            "count": len(poor_sleep_days),
-            "sample_dates": poor_sleep_days[:3],
-            "confidence": _confidence_from_samples(len(poor_sleep_days)),
-        })
+    by_date = _entries_by_date(entries)
+    apple_daily = parse_daily(_find_apple_export())
+    merge = merge_with_omi(by_date, apple_daily)
     return _with_gates({
-        "omi_days": merged_days,
-        "apple_days": apple.get("days", 0),
-        "apple_summary": apple.get("summary", {}),
-        "merged_insights": overlap_insights,
-        "note": "Omi signals merged with Apple summary for combined agent view.",
+        "omi_days": len(by_date),
+        "apple_days": len(apple_daily),
+        "overlap_days": merge.get("overlap_days", 0),
+        "apple_summary": load_apple_health_data()["data"].get("summary", {}),
+        "merged_insights": merge.get("merged_insights", []),
+        "sample_days": merge.get("sample_days", []),
+        "note": "Daily Omi signals merged with Apple metrics by date.",
     })
 
 @mcp.tool()
@@ -799,7 +810,7 @@ def list_data_sources() -> Dict[str, Any]:
     export = _find_apple_export()
     vault = _resolve_vault()
     return _with_gates({
-        "version": "3.1",
+        "version": "1.0-mvp",
         "sidecar": _get_manifest().get("name"),
         "omi_files": len(list((vault / "050 Daily Omi").rglob("*.md"))) if (vault / "050 Daily Omi").exists() else 0,
         "apple_export_found": bool(export),
@@ -807,15 +818,16 @@ def list_data_sources() -> Dict[str, Any]:
         "parser_features": [
             "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
             "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
+            "omi-apple daily merge", "doctor view export",
         ],
-        "status": "Sprint 5-6 complete — demo-ready",
+        "status": "MVP 1.0 complete — see docs/MVP-1.0.md",
     })
 
 if __name__ == "__main__":
     import sys
     if "--test" in sys.argv:
         os.environ.setdefault("OMI_VAULT_PATH", str(_DEMO_VAULT))
-        print("VitaSide v3.1 self-test")
+        print("VitaSide MVP 1.0 self-test")
         test_entries = [
             {"date": "2026-06-01", "signals": ["sleep", "stress"], "snippet": "плохо спал ночью"},
             {"date": "2026-06-02", "signals": ["stress", "mood_low"], "snippet": "стресс и плохое настроение"},

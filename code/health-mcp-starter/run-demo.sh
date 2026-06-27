@@ -41,15 +41,31 @@ echo "--- 4. What-if ---"
 python3 "$ROOT/run_demo_check.py" whatif
 
 echo ""
-echo "--- 5. HTML report ---"
+echo "--- 5. HTML report (patient) ---"
 python3 "$ROOT/run_demo_check.py" html
 
 echo ""
-echo "--- 6. Collaboration ---"
+echo "--- 6. Doctor view ---"
+python3 -c "
+import importlib.util, os
+from pathlib import Path
+r=Path('$ROOT')
+spec=importlib.util.spec_from_file_location('m', r/'health-pattern-mcp.py')
+m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+d=m.generate_doctor_report(format='doctor')
+print('doctor_view_ok bytes=', len(d))
+"
+
+echo ""
+echo "--- 7. Collaboration ---"
 python3 "$ROOT/collaboration_demo.py"
 
 echo ""
-echo "--- 7. Audit log ---"
+echo "--- 8. MVP tests ---"
+python3 "$ROOT/test_mvp.py"
+
+echo ""
+echo "--- 9. Audit log ---"
 wc -l "$ROOT/audit.log" | awk '{print "audit_lines=" $1}'
 
 echo ""

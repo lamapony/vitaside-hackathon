@@ -6,6 +6,15 @@ NAME="${1:-sleep-stress-sidecar}"
 BUNDLE="$ROOT/sidecars/$NAME"
 MANIFEST="$BUNDLE/manifest.yaml"
 
+case "$NAME" in
+  recovery-sidecar)
+    DESC="Post-viral / fatigue recovery pattern sidecar"
+    ;;
+  *)
+    DESC="Sleep-stress-metabolism pattern sidecar for VitaSide protocol demo"
+    ;;
+esac
+
 mkdir -p "$BUNDLE"
 
 VAULT="${OMI_VAULT_PATH:-$ROOT/demo-data/vault}"
@@ -15,7 +24,7 @@ TTL="${VITASIDE_TTL:-30d}"
 cat > "$MANIFEST" <<EOF
 name: "$NAME"
 version: "0.1"
-description: "Sleep-stress-metabolism pattern sidecar for VitaSide protocol demo"
+description: "$DESC"
 issuer: "$ISSUER"
 ttl: "$TTL"
 issued_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "vitaside-sleep-stress": {
+      "command": "python3",
+      "args": [
+        "/ABSOLUTE/PATH/TO/code/health-mcp-starter/health-pattern-mcp.py"
+      ],
+      "env": {
+        "VITASIDE_MANIFEST": "/ABSOLUTE/PATH/TO/code/health-mcp-starter/sidecars/sleep-stress-sidecar/manifest.yaml",
+        "OMI_VAULT_PATH": "/Users/YOU/Documents/Obsidian Vault"
+      }
+    }
+  }
+}

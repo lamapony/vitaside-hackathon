@@ -1,57 +1,50 @@
 # VitaSide Hackathon Project
 
-**VitaSide** — The Sidecar Protocol for Agentic Personal Health Intelligence
+**Status: MVP 1.0 complete** — see [`docs/MVP-1.0.md`](docs/MVP-1.0.md)  
+**Depth roadmap:** [`plan/DEPTH-ROADMAP.md`](plan/DEPTH-ROADMAP.md)
 
-## Quick Start (judges / demo)
+## Quick Start
 
 ```bash
 cd code/health-mcp-starter
-pip install -r requirements.txt
-chmod +x run-demo.sh
-./run-demo.sh
+./setup.sh
+./run-demo.sh              # full MVP flow
+python3 test_mvp.py        # acceptance tests
+./run-demo-full.sh --hardening
 ```
 
-This runs: self-test → pattern analysis → **what-if simulation** on 90-day demo data.
+Open reports:
+```bash
+open out/vitaside-report-$(date +%Y-%m-%d).html
+open out/vitaside-doctor-$(date +%Y-%m-%d).html
+```
 
-### MCP server (Hermes / Cursor)
+## Real data
 
 ```bash
-export OMI_VAULT_PATH="/path/to/your/obsidian/vault"   # or leave default + demo fallback
+export OMI_VAULT_PATH="/Users/you/Documents/Obsidian Vault"
+# Apple: ~/Downloads/apple_health_export/export.xml
+./issue-sidecar.sh sleep-stress-sidecar
 python3 health-pattern-mcp.py
 ```
 
-### Tools available
+MCP config template: `code/health-mcp-starter/mcp-config.example.json`
 
-| Tool | Purpose |
+## MVP includes
+
+- Sidecar protocol (manifest, TTL, scopes, audit)
+- `analyze_patterns` / `simulate_whatif` / reports (markdown, json, html, **doctor**)
+- Omi↔Apple daily merge
+- Multi-agent `collaborative_insight`
+- Two sidecar types: `sleep-stress-sidecar`, `recovery-sidecar`
+
+## Docs
+
+| Doc | Purpose |
 |---|---|
-| `analyze_lifestyle_patterns` | Omi + Apple patterns, lags, anomalies |
-| `simulate_whatif` | Project changes from historical good/bad sleep periods |
-| `generate_doctor_report` | Markdown / JSON / HTML export |
-| `find_correlation` | Pairwise lag correlation |
-| `list_data_sources` | Vault status |
-
-## Plans
-
-- **Rocket plan (active):** `plan/ROCKET-PLAN.md`
-- Spec: `docs/SPEC.md`
-- Pitch: `VitaSide-Hackathon-Pitch.md`
-- Demo script: `pitch/DEMO-SCRIPT.md`
-
-## Status (Sprint 0–4)
-
-- [x] Git repo + requirements + `simulate_whatif`
-- [x] Demo data generator + `run-demo.sh`
-- [x] Quality gates: confidence + citations + disclaimer on insights
-- [x] HTML timeline report (`generate_doctor_report(format="html")`)
-- [x] Sidecar protocol: manifest loader, scope check, TTL, audit.log
-- [x] `issue-sidecar.sh sleep-stress-sidecar`
-- [x] Collaboration demo (`collaboration_demo.py` + `collaborative_insight` tool)
-- [x] Hardening runner (`run-demo-full.sh --hardening`)
-- [x] Final pitch script: `pitch/DEMO-SCRIPT.md`
-
-## Data note
-
-Real Omi vault is used when `OMI_VAULT_PATH` has parseable conversation notes.
-If empty, the server auto-falls back to bundled demo data for a reliable live demo.
+| `docs/MVP-1.0.md` | What's shipped |
+| `plan/DEPTH-ROADMAP.md` | Growth in depth (D1–D5) |
+| `docs/SPEC.md` | Protocol spec |
+| `pitch/DEMO-SCRIPT.md` | Live demo script |
 
 **Disclaimer:** Personal lifestyle patterns only — not a medical diagnosis.

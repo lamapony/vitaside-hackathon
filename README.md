@@ -37,14 +37,16 @@ python3 health-pattern-mcp.py
 - Pitch: `VitaSide-Hackathon-Pitch.md`
 - Demo script: `pitch/DEMO-SCRIPT.md`
 
-## Status (Sprint 0+1)
+## Status (Sprint 0–4)
 
-- [x] Git repo + requirements
-- [x] Demo data generator (`gen_demo_data.py`) — 90 days, planted correlations
-- [x] `simulate_whatif` MCP tool with confidence + citations + disclaimer
-- [x] One-command demo runner (`run-demo.sh`)
-- [ ] HTML timeline report (Sprint 3)
-- [ ] Sidecar manifest + `issue-sidecar.sh` (Sprint 4)
+- [x] Git repo + requirements + `simulate_whatif`
+- [x] Demo data generator + `run-demo.sh`
+- [x] Quality gates: confidence + citations + disclaimer on insights
+- [x] HTML timeline report (`generate_doctor_report(format="html")`)
+- [x] Sidecar protocol: manifest loader, scope check, TTL, audit.log
+- [x] `issue-sidecar.sh sleep-stress-sidecar`
+- [ ] Collaboration demo script (Sprint 5)
+- [ ] Demo hardening 3× (Sprint 6)
 
 ## Data note
 

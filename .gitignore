@@ -18,3 +18,6 @@ audit.log
 
 # Generated demo vault (regenerate with gen_demo_data.py)
 code/health-mcp-starter/demo-data/
+code/health-mcp-starter/out/
+code/health-mcp-starter/audit.log
+code/health-mcp-starter/sidecars/*/manifest.yaml

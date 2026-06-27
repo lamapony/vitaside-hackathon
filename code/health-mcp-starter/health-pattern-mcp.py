@@ -1,6 +1,6 @@
 #!/opt/anaconda3/bin/python3
 """
-VitaSide Health Pattern MCP Server — v3.0 (Hackathon Sprint 1)
+VitaSide Health Pattern MCP Server — v3.1 (Sprint 2–4)
 - Improved Omi parser (timestamps, context words сегодня/вчера, speaker separation, quality scoring, time-of-day)
 - Apple Health XML parsing + demo
 - Temporal correlations (lags 1-3 days, lift, p-values via scipy)
@@ -19,6 +19,31 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict, Counter
 from typing import List, Dict, Any, Optional
 import math
+
+from sidecar_protocol import (
+    load_manifest,
+    assert_sidecar_active,
+    check_scope,
+    audit,
+    audit_summary,
+    is_expired,
+)
+from report_html import generate_html_report
+
+_MANIFEST: Optional[Dict[str, Any]] = None
+
+
+def _get_manifest() -> Dict[str, Any]:
+    global _MANIFEST
+    if _MANIFEST is None:
+        _MANIFEST = load_manifest()
+    return _MANIFEST
+
+
+def _with_gates(payload: Dict[str, Any]) -> Dict[str, Any]:
+    payload.setdefault("disclaimer", DISCLAIMER)
+    payload.setdefault("quality_gates", _get_manifest().get("quality_gates", []))
+    return payload
 
 try:
     import pandas as pd
@@ -183,6 +208,14 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
 
         signals = [s["signal"] for s in signals_with_quality]
 
+        excerpts: Dict[str, List[Dict[str, str]]] = defaultdict(list)
+        for speaker, _mm, _ss, text in transcript_lines:
+            line = text.strip()
+            line_lower = line.lower()
+            for sig, cfg in SIGNAL_PATTERNS.items():
+                if re.search(cfg["keywords"], line_lower, re.I):
+                    excerpts[sig].append({"text": line, "speaker": speaker})
+
         sq = "unknown"
         if SLEEP_POOR_RE.search(full_text):
             sq = "poor"
@@ -198,6 +231,7 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
             "signals_with_quality": signals_with_quality,
             "context_words": context_words,
             "sleep_quality": sq,
+            "excerpts": dict(excerpts),
             "snippet": (spoken[:300] + "...") if len(spoken) > 300 else spoken
         } if date_str and signals else None
     except Exception as e:
@@ -215,8 +249,10 @@ def _resolve_vault() -> Path:
     return _DEFAULT_VAULT
 
 
-def _scan_omi(limit: int = 100) -> List[Dict]:
+def _scan_omi(limit: int = 100, tool: str = "scan_omi") -> List[Dict]:
+    assert_sidecar_active(_get_manifest())
     vault = _resolve_vault()
+    manifest = _get_manifest()
     candidates = [
         vault / "050 Daily Omi" / "Conversations",
         vault / "050 Daily Omi" / "telegram-extracts",
@@ -225,8 +261,54 @@ def _scan_omi(limit: int = 100) -> List[Dict]:
     for base in candidates:
         if base.exists():
             files.extend(list(base.rglob("*.md")))
-    files = sorted(files, key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)[:limit]
-    return [p for p in (_parse_omi_file(f) for f in files) if p]
+    files = sorted(files, key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)[: limit * 2]
+    allowed_files = [f for f in files if check_scope(manifest, f)]
+    allowed_files = allowed_files[:limit]
+    parsed = [p for p in (_parse_omi_file(f) for f in allowed_files) if p]
+    audit(tool, {"files": [str(f) for f in allowed_files], "count": len(parsed), "vault": str(vault)})
+    return parsed
+
+
+def _entries_by_date(entries: List[Dict]) -> Dict[str, Dict]:
+    return {e["date"]: e for e in entries if e.get("date")}
+
+
+def _cite_for_entry(entry: Dict[str, Any], signal: str) -> Dict[str, str]:
+    ex = entry.get("excerpts", {}).get(signal, [])
+    text = ex[0]["text"] if ex else entry.get("snippet", "")
+    return {"date": entry.get("date", ""), "excerpt": text[:220]}
+
+
+def _enrich_correlations(entries: List[Dict], temporal: List[Dict]) -> List[Dict]:
+    by_date = _entries_by_date(entries)
+    for c in temporal:
+        cites = []
+        for d in c.get("example_dates", []):
+            e = by_date.get(d)
+            if not e:
+                continue
+            lag = c.get("lag", 1)
+            date_list = sorted(by_date.keys())
+            try:
+                idx = date_list.index(d)
+                effect_date = date_list[idx + lag] if idx + lag < len(date_list) else d
+                effect_entry = by_date.get(effect_date, e)
+            except ValueError:
+                effect_entry = e
+            cites.append(_cite_for_entry(effect_entry, c.get("effect", "")))
+        c["citations"] = cites[:2]
+        c["confidence"] = _confidence_from_samples(len(c.get("example_dates", [])))
+    return temporal
+
+
+def _enrich_anomalies(entries: List[Dict], anomalies: List[Dict]) -> List[Dict]:
+    by_date = _entries_by_date(entries)
+    for a in anomalies:
+        e = by_date.get(a.get("date", ""), {})
+        sig = a.get("signal", "")
+        a["citations"] = [_cite_for_entry(e, sig)] if e else []
+        a["confidence"] = _confidence_from_samples(1 if e else 0)
+    return anomalies
 
 
 def _sleep_quality(entry: Dict[str, Any]) -> str:
@@ -487,49 +569,58 @@ def analyze_apple_patterns() -> Dict[str, Any]:
 
 @mcp.tool()
 def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, Any]:
-    entries = _scan_omi(120)
+    entries = _scan_omi(120, tool="analyze_lifestyle_patterns")
     ts = _build_timeseries(entries)
     by_date = ts["by_date"]
     baseline = _compute_baseline_stats(ts)
-    temporal = _compute_temporal_correlations(ts)
-    anomalies = _compute_anomalies(entries, baseline)
+    temporal = _enrich_correlations(entries, _compute_temporal_correlations(ts))
+    anomalies = _enrich_anomalies(entries, _compute_anomalies(entries, baseline))
     apple = analyze_apple_patterns()
 
     co = sum(1 for sigs in by_date.values() if "sleep" in sigs and "stress" in sigs)
     vault = _resolve_vault()
-    for c in temporal[:10]:
-        c["confidence"] = _confidence_from_samples(len(c.get("example_dates", [])))
-    return {
-        "version": "3.0",
+    manifest = _get_manifest()
+    return _with_gates({
+        "version": "3.1",
+        "sidecar": manifest.get("name"),
+        "sidecar_expired": is_expired(manifest),
         "vault_path": str(vault),
         "time_range": time_range,
         "files_scanned": len(entries),
         "unique_dates": len(by_date),
         "signals_distribution": dict(Counter(s for e in entries for s in e.get("signals", []))),
         "baseline": baseline,
-        "co_occurrence": [{"pattern": "sleep+stress same day", "count": co}],
+        "co_occurrence": [{"pattern": "sleep+stress same day", "count": co, "confidence": _confidence_from_samples(co)}],
         "temporal_correlations": temporal,
         "anomalies": anomalies,
         "apple_patterns": apple,
         "recommendations": ["Collect more Omi notes on sleep/mood", "Export Apple Health data"],
-        "disclaimer": DISCLAIMER,
-        "phase": "sprint-1"
-    }
+        "audit_summary": audit_summary(5),
+        "phase": "sprint-2-4",
+    })
 
 @mcp.tool()
 def find_correlation(metric_a: str = "sleep", metric_b: str = "stress", lag: int = 1) -> Dict[str, Any]:
-    entries = _scan_omi(80)
+    entries = _scan_omi(80, tool="find_correlation")
     ts = _build_timeseries(entries)
-    # simplified lag logic
+    by_date = _entries_by_date(entries)
     co = 0
+    example_dates = []
     for i, d in enumerate(ts["date_list"]):
         if metric_a in ts["by_date"].get(d, set()):
             lag_idx = i + lag
             if lag_idx < len(ts["date_list"]):
-                if metric_b in ts["by_date"].get(ts["date_list"][lag_idx], set()):
+                lag_d = ts["date_list"][lag_idx]
+                if metric_b in ts["by_date"].get(lag_d, set()):
                     co += 1
-    return {"metric_a": metric_a, "metric_b": metric_b, "lag": lag, "co_occurrences": co,
-            "disclaimer": DISCLAIMER}
+                    example_dates.append(lag_d)
+    citations = [_cite_for_entry(by_date[d], metric_b) for d in example_dates[:2] if d in by_date]
+    return _with_gates({
+        "metric_a": metric_a, "metric_b": metric_b, "lag": lag,
+        "co_occurrences": co,
+        "confidence": _confidence_from_samples(co),
+        "citations": citations,
+    })
 
 @mcp.tool()
 def simulate_whatif(scenario: dict) -> Dict[str, Any]:
@@ -540,61 +631,111 @@ def simulate_whatif(scenario: dict) -> Dict[str, Any]:
       {"intervention": "consistent_sleep_7_5h", "duration_days": 14,
        "target_signals": ["mood_low", "stress", "symptom_pain"]}
     """
-    entries = _scan_omi(120)
-    return _simulate_whatif_core(entries, scenario or {})
+    entries = _scan_omi(120, tool="simulate_whatif")
+    return _with_gates(_simulate_whatif_core(entries, scenario or {}))
 
 @mcp.tool()
-def generate_doctor_report(format: str = "markdown") -> str:
+def generate_doctor_report(format: str = "markdown", include_whatif: bool = True) -> str:
+    entries = _scan_omi(120, tool="generate_doctor_report")
     analysis = analyze_lifestyle_patterns()
     apple = analyze_apple_patterns()
+    whatif = _simulate_whatif_core(entries, {
+        "intervention": "consistent_sleep_7_5h",
+        "duration_days": 14,
+        "target_signals": ["mood_low", "stress", "symptom_pain"],
+    }) if include_whatif else {}
+    audit_info = audit_summary(10)
+
     if format == "json":
-        return json.dumps({"analysis": analysis, "apple": apple}, ensure_ascii=False, indent=2)
+        return json.dumps(_with_gates({
+            "analysis": analysis, "apple": apple, "whatif": whatif, "audit": audit_info,
+        }), ensure_ascii=False, indent=2)
+
     if format == "html":
-        return "<html><body><h1>VitaCo Report</h1><pre>" + json.dumps(analysis, indent=2) + "</pre></body></html>"
-    # markdown default
-    return f"""# VitaCo Health Pattern Report v2.5
+        html_out = generate_html_report(analysis, apple, entries, whatif, audit_info, DISCLAIMER)
+        out_path = _SCRIPT_DIR / "out" / f"vitaside-report-{datetime.date.today()}.html"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(html_out, encoding="utf-8")
+        audit("report_export", {"format": "html", "path": str(out_path)})
+        return html_out
 
-**Date:** {datetime.date.today()}
-**Omi:** {analysis['files_scanned']} files, {analysis['unique_dates']} days
-**Apple:** {apple['source']} ({apple['days_covered']} days)
-
-## Temporal Correlations (lags)
-{json.dumps(analysis.get('temporal_correlations', [])[:5], ensure_ascii=False, indent=2)}
-
-## Anomalies
-{json.dumps(analysis.get('anomalies', [])[:5], ensure_ascii=False, indent=2)}
-
-**Important:** Patterns and signals only. For doctor review. Not a diagnosis.
-"""
+    lines = [
+        f"# VitaSide Health Pattern Report v3.1",
+        f"",
+        f"**Date:** {datetime.date.today()}",
+        f"**Omi:** {analysis['files_scanned']} files, {analysis['unique_dates']} days",
+        f"**Apple:** {apple['source']} ({apple['days_covered']} days)",
+        f"",
+        f"## Top Correlations",
+    ]
+    for c in analysis.get("temporal_correlations", [])[:5]:
+        lines.append(f"- **{c['cause']} → {c['effect']}** (lag {c['lag']}d, lift {c['lift_ratio']}, conf {c.get('confidence')})")
+        for cite in c.get("citations", [])[:1]:
+            lines.append(f"  > {cite.get('date')}: {cite.get('excerpt', '')[:120]}")
+    if whatif.get("projected_outcomes"):
+        lines += ["", "## What-If", json.dumps(whatif["projected_outcomes"], ensure_ascii=False, indent=2)]
+    lines += ["", f"**{DISCLAIMER}**"]
+    return "\n".join(lines)
 
 @mcp.tool()
 def combine_omi_and_apple() -> Dict[str, Any]:
-    omi = _scan_omi(50)
+    entries = _scan_omi(120, tool="combine_omi_and_apple")
     apple = load_apple_health_data()["data"]
-    return {
-        "omi_days": len(set(e["date"] for e in omi if e.get("date"))),
+    omi_dates = {e["date"]: e for e in entries if e.get("date")}
+    merged_days = len(omi_dates)
+    overlap_insights = []
+    poor_sleep_days = [d for d, e in omi_dates.items() if e.get("sleep_quality") == "poor"]
+    if poor_sleep_days:
+        overlap_insights.append({
+            "pattern": "poor_sleep_days",
+            "count": len(poor_sleep_days),
+            "sample_dates": poor_sleep_days[:3],
+            "confidence": _confidence_from_samples(len(poor_sleep_days)),
+        })
+    return _with_gates({
+        "omi_days": merged_days,
         "apple_days": apple.get("days", 0),
         "apple_summary": apple.get("summary", {}),
-        "note": "Merge by date for future correlation."
-    }
+        "merged_insights": overlap_insights,
+        "note": "Omi signals merged with Apple summary for combined agent view.",
+    })
+
+@mcp.tool()
+def get_sidecar_status() -> Dict[str, Any]:
+    m = _get_manifest()
+    return _with_gates({
+        "name": m.get("name"),
+        "issuer": m.get("issuer"),
+        "expires_at": m.get("_expires_at"),
+        "expired": is_expired(m),
+        "allowed_scopes": m.get("allowed_scopes", []),
+        "tools": m.get("tools", []),
+        "manifest_path": m.get("_manifest_path"),
+        "audit": audit_summary(5),
+    })
 
 @mcp.tool()
 def list_data_sources() -> Dict[str, Any]:
     export = _find_apple_export()
-    return {
-        "version": "2.5",
-        "omi_files": len(list((OMI_VAULT_PATH / "050 Daily Omi").rglob("*.md"))) if (OMI_VAULT_PATH / "050 Daily Omi").exists() else 0,
+    vault = _resolve_vault()
+    return _with_gates({
+        "version": "3.1",
+        "sidecar": _get_manifest().get("name"),
+        "omi_files": len(list((vault / "050 Daily Omi").rglob("*.md"))) if (vault / "050 Daily Omi").exists() else 0,
         "apple_export_found": bool(export),
         "supported_signals": list(SIGNAL_PATTERNS.keys()),
-        "parser_features": ["context words (сегодня/вчера)", "speaker separation", "quality scoring", "time-of-day", "lag 1-3d correlations", "anomalies vs baseline"],
-        "status": "Phase 1 complete (Omi parser + Apple + Analytics)"
-    }
+        "parser_features": [
+            "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
+            "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
+        ],
+        "status": "Sprint 2-4 (quality gates + HTML + protocol)",
+    })
 
 if __name__ == "__main__":
     import sys
     if "--test" in sys.argv:
         os.environ.setdefault("OMI_VAULT_PATH", str(_DEMO_VAULT))
-        print("VitaSide v3.0 self-test")
+        print("VitaSide v3.1 self-test")
         test_entries = [
             {"date": "2026-06-01", "signals": ["sleep", "stress"], "snippet": "плохо спал ночью"},
             {"date": "2026-06-02", "signals": ["stress", "mood_low"], "snippet": "стресс и плохое настроение"},
@@ -605,8 +746,14 @@ if __name__ == "__main__":
         assert len(ts["date_list"]) == 4
         sim = _simulate_whatif_core(test_entries, {"duration_days": 14})
         assert "projected_outcomes" in sim and "disclaimer" in sim
+        html = generate_html_report(
+            {"files_scanned": 4, "unique_dates": 4, "temporal_correlations": []},
+            {"source": "demo"}, test_entries, sim, {"entries": 0}, DISCLAIMER,
+        )
+        assert "<title>VitaSide Report" in html
         print("Timeseries OK, dates:", len(ts["date_list"]))
         print("simulate_whatif OK, confidence:", sim["confidence"])
+        print("HTML report OK, bytes:", len(html))
         print("All tests passed.")
     else:
         mcp.run(transport="stdio")

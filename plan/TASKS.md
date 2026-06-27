@@ -15,11 +15,11 @@ Use /plan style: small tasks, one at a time.
 3. Add full Apple Health XML support for key metrics (sleep, HR, activity, SpO2). ⚠️ partial
 4. Implement temporal correlations (lags), anomalies vs baseline, stats (pandas/scipy). ✅
 5. Add `simulate_whatif` tool: based on historical deltas. ✅ Sprint 1
-6. Enhance reports: add timeline visualization (HTML with simple charts), citations.
-7. Add audit logging for all accesses.
-8. Create issuance script (generate manifest + sidecar bundle).
+6. Enhance reports: add timeline visualization (HTML with simple charts), citations. ✅ Sprint 3
+7. Add audit logging for all accesses. ✅ Sprint 4
+8. Create issuance script (generate manifest + sidecar bundle). ✅ Sprint 4
 9. Implement demo collaboration simulation (Python script emulating main + sidecar chat).
-10. Add quality gates in code: always confidence, sources, disclaimer. ⚠️ partial (analyze + whatif)
+10. Add quality gates in code: always confidence, sources, disclaimer. ✅ Sprint 2
 11. Demo data generator + run-demo.sh ✅ Sprint 0+1
 
 ## Test Tasks

@@ -45,8 +45,9 @@ python3 health-pattern-mcp.py
 - [x] HTML timeline report (`generate_doctor_report(format="html")`)
 - [x] Sidecar protocol: manifest loader, scope check, TTL, audit.log
 - [x] `issue-sidecar.sh sleep-stress-sidecar`
-- [ ] Collaboration demo script (Sprint 5)
-- [ ] Demo hardening 3× (Sprint 6)
+- [x] Collaboration demo (`collaboration_demo.py` + `collaborative_insight` tool)
+- [x] Hardening runner (`run-demo-full.sh --hardening`)
+- [x] Final pitch script: `pitch/DEMO-SCRIPT.md`
 
 ## Data note
 

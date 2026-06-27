@@ -18,7 +18,7 @@ Use /plan style: small tasks, one at a time.
 6. Enhance reports: add timeline visualization (HTML with simple charts), citations. ✅ Sprint 3
 7. Add audit logging for all accesses. ✅ Sprint 4
 8. Create issuance script (generate manifest + sidecar bundle). ✅ Sprint 4
-9. Implement demo collaboration simulation (Python script emulating main + sidecar chat).
+9. Implement demo collaboration simulation (Python script emulating main + sidecar chat). ✅ Sprint 5
 10. Add quality gates in code: always confidence, sources, disclaimer. ✅ Sprint 2
 11. Demo data generator + run-demo.sh ✅ Sprint 0+1
 
@@ -35,9 +35,9 @@ Use /plan style: small tasks, one at a time.
 18. Create visual assets for pitch.
 
 ## Ship
-19. Package demo (one-command runner).
-20. Final pitch deck / script.
-21. Test full demo flow 3x.
+19. Package demo (one-command runner). ✅ run-demo.sh + run-demo-full.sh
+20. Final pitch deck / script. ✅ pitch/DEMO-SCRIPT.md
+21. Test full demo flow 3x. ✅ run-demo-full.sh --hardening
 
 Prioritize 1-9 + 13 + 19 for core demo. Use agent-skills: test each slice.
 

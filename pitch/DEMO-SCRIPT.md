@@ -1,49 +1,82 @@
-# VitaSide Hackathon Demo Script
+# VitaSide Live Demo Script (Sprint 6 — final flow)
 
-## Setup (5 min before demo)
-- Have Hermes running or simulated.
-- Pre-load the sidecar manifest.
-- Have real data ready (anonymized if needed).
-- Run the full flow script in background if needed.
+**One command before judges:** `./run-demo-full.sh --hardening`
 
-## Live Demo Flow (6-8 minutes)
+**Single dry-run:** `./run-demo.sh`
 
-1. **Introduction (30s)**
-   - "VitaSide: Doctor issues a temporary AI sidecar that lives inside your personal agent."
-   - Show the problem: doctor blind spot.
+---
 
-2. **Issuing the Sidecar (1 min)**
-   - Run: `./issue-sidecar.sh sleep-stress-sidecar`
-   - Show manifest.
-   - "Patient adds to config: one line."
+## Pre-flight (5 min)
 
-3. **Live Analysis (2 min)**
-   - In chat: "Analyze my patterns for sleep and mood last 60 days."
-   - Show sidecar activating.
-   - Output: patterns with citations from Omi, correlations with lags, anomalies.
-   - "See? It found 'after late coffees + high steps, mood tanks next day' with examples."
+```bash
+cd code/health-mcp-starter
+pip install -r requirements.txt
+./run-demo-full.sh --hardening   # must pass 3/3
+open out/vitaside-report-$(date +%Y-%m-%d).html   # bookmark this tab
+```
 
-4. **What-If Wow (1.5 min)**
-   - "What if I slept 7.5h consistently?"
-   - Run simulate.
-   - Show projected improvements based on your real past data.
+Backup: screenshot `out/` + terminal output. Pre-record `./run-demo-full.sh` once.
 
-5. **Report & Export (1 min)**
-   - Generate HTML timeline report.
-   - Show visual (bars, annotations).
-   - "Export for doctor" - structured + narrative.
+---
 
-6. **Collaboration Demo (1 min)**
-   - "Main agent knows my travel from notes. Sidecar knows biometrics."
-   - Show combined insight.
+## Live flow (6–7 min)
 
-7. **Close & Why (30s)**
-   - Privacy: local, temporary, audited.
-   - Protocol extensible.
-   - "This is how personal agents get specialized intelligence safely."
+### 1. Hook (30s)
+> "Doctors see 15-minute snapshots. You live 24/7 with Omi voice notes and Apple Health. VitaSide lets a doctor issue a **temporary AI sidecar** inside your personal agent — local, audited, expiring."
 
-**Backup:** Pre-recorded video of full flow if live fails. Have screenshots.
+### 2. Issue sidecar (45s)
+```bash
+./issue-sidecar.sh sleep-stress-sidecar
+```
+Show `manifest.yaml`: scopes, TTL, issuer.  
+> "Patient adds one MCP block. No new app. No cloud."
 
-**Props:** Terminal, browser for HTML report, perhaps simple web mock for "doctor view".
+### 3. Pattern analysis (90s)
+```bash
+python3 run_demo_check.py analyze
+```
+Point at **citations** on top correlation.  
+> "Not hallucinated — every pattern cites your actual note."
 
-Run the full end-to-end before judges.
+### 4. What-if wow (90s)
+```bash
+python3 run_demo_check.py whatif
+```
+> "What if I fixed sleep to 7.5h for two weeks? Sidecar projects from *your* history — confidence 0.95."
+
+### 5. HTML report (60s)
+```bash
+python3 run_demo_check.py html && open out/vitaside-report-*.html
+```
+Scroll timeline + pattern cards + audit footer.
+
+### 6. Collaboration (60s)
+```bash
+python3 collaboration_demo.py
+```
+> "Hermes knows your flights and deadlines. Sidecar knows sleep and stress lags. **Together** they explain *why* those weeks felt worse."
+
+### 7. Close (30s)
+```bash
+wc -l audit.log && python3 run_demo_check.py sidecar
+```
+> "Local. Temporary. Audited. Protocol extensible — any specialist can issue a sidecar. Patterns for awareness, not diagnosis."
+
+---
+
+## Judge Q&A cheatsheet
+
+| Question | Answer |
+|---|---|
+| Medical device? | No — personal pattern intelligence for self-awareness and visit prep. Disclaimer on every output. |
+| Privacy? | Scoped paths, audit.log, TTL expiry, no network. |
+| Real data? | Demo vault with planted correlations; swap `OMI_VAULT_PATH` for real Omi vault. |
+| vs generic AI coach? | Multi-agent + MCP sidecar protocol + citations + what-if from *your* history. |
+
+---
+
+## If live fails
+
+1. Open pre-generated HTML in `out/`
+2. Show `collaboration_demo.py` output screenshot
+3. Walk through `docs/SPEC.md` manifest example

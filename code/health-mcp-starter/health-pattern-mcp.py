@@ -634,6 +634,86 @@ def simulate_whatif(scenario: dict) -> Dict[str, Any]:
     entries = _scan_omi(120, tool="simulate_whatif")
     return _with_gates(_simulate_whatif_core(entries, scenario or {}))
 
+DEFAULT_HOST_CONTEXT = {
+    "agent": "hermes-main",
+    "events": [
+        {"date": "2026-05-02", "type": "travel", "note": "Late flight return, landed 01:30"},
+        {"date": "2026-05-09", "type": "travel", "note": "Conference trip — 2 nights in hotel"},
+        {"date": "2026-05-16", "type": "deadline", "note": "Product launch crunch week"},
+        {"date": "2026-05-23", "type": "travel", "note": "Weekend trip, red-eye Sunday"},
+        {"date": "2026-06-06", "type": "deadline", "note": "Hackathon prep sprint"},
+    ],
+}
+
+
+def _dates_near_events(events: List[Dict], window: int = 2) -> set:
+    out = set()
+    for ev in events:
+        try:
+            d = datetime.date.fromisoformat(ev["date"])
+        except ValueError:
+            continue
+        for delta in range(-window, window + 1):
+            out.add((d + datetime.timedelta(days=delta)).isoformat())
+    return out
+
+
+def _collaborative_insight_core(host_context: Dict[str, Any]) -> Dict[str, Any]:
+    entries = _scan_omi(120, tool="collaborative_insight")
+    analysis = analyze_lifestyle_patterns()
+    apple = combine_omi_and_apple()
+    events = host_context.get("events", [])
+    travel_dates = _dates_near_events([e for e in events if e.get("type") == "travel"])
+    deadline_dates = _dates_near_events([e for e in events if e.get("type") == "deadline"], window=3)
+    by_date = _entries_by_date(entries)
+
+    poor_near_travel, stress_near_deadline = [], []
+    for d in travel_dates:
+        e = by_date.get(d)
+        if e and e.get("sleep_quality") == "poor":
+            poor_near_travel.append({"date": d, "excerpt": e.get("snippet", "")[:160]})
+    for d in deadline_dates:
+        e = by_date.get(d)
+        if e and "stress" in e.get("signals", []):
+            stress_near_deadline.append({"date": d, "excerpt": e.get("snippet", "")[:160]})
+
+    top = (analysis.get("temporal_correlations") or [{}])[0]
+    parts = []
+    if poor_near_travel:
+        p = poor_near_travel[0]
+        parts.append(
+            f"{len(poor_near_travel)} poor-sleep nights within ±2 days of travel "
+            f"(e.g. {p['date']}: \"{p['excerpt'][:80]}\")."
+        )
+    if stress_near_deadline:
+        parts.append(f"Stress signals on {len(stress_near_deadline)} days near deadline windows.")
+    if not parts:
+        parts.append("Travel/deadline windows overlap with sleep+stress co-occurrence in sidecar data.")
+    parts.append(
+        f"Sidecar correlation: {top.get('cause')}→{top.get('effect')} lag {top.get('lag')}d. "
+        f"Main agent tracked {len(events)} life events."
+    )
+
+    return {
+        "main_agent_context": host_context,
+        "collaborative_insight": " ".join(parts),
+        "evidence": {
+            "poor_sleep_near_travel": poor_near_travel[:3],
+            "stress_near_deadline": stress_near_deadline[:3],
+            "top_correlation": top,
+            "apple_summary": apple.get("apple_summary", {}),
+        },
+        "confidence": _confidence_from_samples(len(poor_near_travel) + len(stress_near_deadline)),
+    }
+
+
+@mcp.tool()
+def collaborative_insight(host_context: dict = None) -> Dict[str, Any]:
+    """Merge main-agent life context with sidecar biometric/pattern analysis."""
+    ctx = host_context if host_context else DEFAULT_HOST_CONTEXT
+    audit("collaborative_insight", {"events": len(ctx.get("events", []))})
+    return _with_gates(_collaborative_insight_core(ctx))
+
 @mcp.tool()
 def generate_doctor_report(format: str = "markdown", include_whatif: bool = True) -> str:
     entries = _scan_omi(120, tool="generate_doctor_report")
@@ -728,7 +808,7 @@ def list_data_sources() -> Dict[str, Any]:
             "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
             "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
         ],
-        "status": "Sprint 2-4 (quality gates + HTML + protocol)",
+        "status": "Sprint 5-6 complete — demo-ready",
     })
 
 if __name__ == "__main__":

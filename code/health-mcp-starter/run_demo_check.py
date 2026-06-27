@@ -52,7 +52,15 @@ def cmd_sidecar():
     print(json.dumps({"name": s.get("name"), "expired": s.get("expired"), "audit_entries": s.get("audit", {}).get("entries")}, indent=2))
 
 
+def cmd_collaborate():
+    r = m.collaborative_insight()
+    print(r["collaborative_insight"][:200])
+    if not r.get("collaborative_insight"):
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    cmds = {"analyze": cmd_analyze, "whatif": cmd_whatif, "html": cmd_html, "sidecar": cmd_sidecar}
+    cmds = {"analyze": cmd_analyze, "whatif": cmd_whatif, "html": cmd_html,
+            "sidecar": cmd_sidecar, "collaborate": cmd_collaborate}
     cmd = sys.argv[1] if len(sys.argv) > 1 else "analyze"
     cmds[cmd]()

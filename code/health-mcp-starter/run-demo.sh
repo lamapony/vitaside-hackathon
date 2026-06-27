@@ -45,8 +45,13 @@ echo "--- 5. HTML report ---"
 python3 "$ROOT/run_demo_check.py" html
 
 echo ""
-echo "--- 6. Audit log ---"
+echo "--- 6. Collaboration ---"
+python3 "$ROOT/collaboration_demo.py"
+
+echo ""
+echo "--- 7. Audit log ---"
 wc -l "$ROOT/audit.log" | awk '{print "audit_lines=" $1}'
 
 echo ""
 echo "=== Demo OK ==="
+echo "Hardening: ./run-demo-full.sh --hardening"

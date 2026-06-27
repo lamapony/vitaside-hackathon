@@ -15,8 +15,11 @@ def generate_doctor_view(
     merge: Dict[str, Any],
     whatif: Dict[str, Any],
     disclaimer: str,
+    brief: Dict[str, Any] | None = None,
 ) -> str:
     today = datetime.date.today().isoformat()
+    brief = brief or {}
+    one_liner = brief.get("one_liner", "")
     patterns = analysis.get("temporal_correlations", [])[:4]
     pattern_rows = "".join(
         f"<tr><td>{_e(c.get('cause'))}→{_e(c.get('effect'))}</td>"
@@ -41,6 +44,7 @@ def generate_doctor_view(
 body{{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1a1a1a}}
 h1{{font-size:1.4rem;border-bottom:2px solid #2563eb;padding-bottom:8px}}
 .meta{{color:#666;font-size:.9rem}}
+.one-liner{{font-weight:600;color:#1e40af;margin:12px 0}}
 table{{width:100%;border-collapse:collapse;margin:16px 0;font-size:.85rem}}
 th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
 th{{background:#f1f5f9}}
@@ -49,8 +53,9 @@ th{{background:#f1f5f9}}
 .section{{margin:24px 0}}
 </style></head><body>
 <h1>Patient Pattern Summary (Doctor View)</h1>
-<p class="meta">Generated {today} · {analysis.get('unique_dates',0)} days · 
-<strong>Not a diagnosis</strong> — patterns for visit discussion</p>
+<p class="meta">Generated {today} · {analysis.get('unique_dates',0)} days analyzed · 
+<strong>Not a diagnosis</strong></p>
+{f'<p class="one-liner"><strong>Headline:</strong> {_e(one_liner)}</p>' if one_liner else ''}
 
 <div class="section"><h2>Key Cross-Day Patterns</h2>
 <table><tr><th>Pattern</th><th>Lag</th><th>Lift</th><th>Conf.</th><th>Example note</th></tr>

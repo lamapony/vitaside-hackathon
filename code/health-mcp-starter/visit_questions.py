@@ -1,7 +1,9 @@
-"""Auto-generate questions for a doctor visit from pattern analysis."""
+"""Auto-generate doctor visit questions from YOUR cited patterns."""
 from __future__ import annotations
 
 from typing import Any, Dict, List
+
+from actionable_insights import _label
 
 
 def generate_visit_questions(
@@ -10,48 +12,59 @@ def generate_visit_questions(
     whatif: Dict[str, Any],
 ) -> Dict[str, Any]:
     questions: List[Dict[str, str]] = []
+    days = analysis.get("unique_dates", 0)
 
     for c in analysis.get("temporal_correlations", [])[:3]:
+        cause, effect = _label(c.get("cause", "")), _label(c.get("effect", ""))
+        cite = (c.get("citations") or [{}])[0]
+        ex = cite.get("excerpt", "")[:100]
+        date = cite.get("date", "")
         questions.append({
-            "topic": f"{c.get('cause')} → {c.get('effect')}",
+            "topic": f"{cause} → {effect}",
             "question": (
-                f"I noticed in my notes that when I report '{c.get('cause')}', "
-                f"'{c.get('effect')}' often appears {c.get('lag')} day(s) later "
-                f"(confidence {c.get('confidence')}). Could lifestyle factors explain this?"
+                f"Across {days} days of my notes, {effect} showed up {c.get('lag')} day(s) after {cause} "
+                f"in {len(c.get('example_dates', []))}+ chains (lift {c.get('lift_ratio')}×). "
+                f"On {date} I wrote about this — could we explore lifestyle links?"
             ),
-            "evidence": (c.get("citations") or [{}])[0].get("excerpt", "")[:160],
+            "evidence": ex,
+            "evidence_date": date,
         })
 
     for ins in merge.get("merged_insights", [])[:2]:
         questions.append({
-            "topic": ins.get("pattern", "wearable"),
+            "topic": "voice + wearable",
             "question": (
-                f"My voice notes and wearable data show: {ins.get('description')} "
-                f"({ins.get('count')} days). Is this worth tracking clinically?"
+                f"My Omi notes and Apple data agree on {ins.get('count')} days: {ins.get('description')}. "
+                "Should we use both sources at follow-ups?"
             ),
-            "evidence": "",
+            "evidence": f"{merge.get('overlap_days', 0)} overlapping days analyzed",
+            "evidence_date": "",
         })
 
     for p in whatif.get("projected_outcomes", [])[:1]:
+        based = whatif.get("based_on", {})
         questions.append({
-            "topic": "sleep intervention",
+            "topic": "sleep experiment",
             "question": (
-                f"If I improve sleep consistently, my data suggests {p.get('signal')} "
-                f"might change by ~{abs(p.get('change_percent', 0))}%. "
-                "Does that align with what you'd expect for me?"
+                f"If I stabilize sleep, my own history suggests {_label(p.get('signal', ''))} "
+                f"could shift ~{abs(p.get('change_percent', 0)):.0f}% "
+                f"(based on {based.get('good_sleep_nights', 0)} good vs {based.get('poor_sleep_nights', 0)} poor nights). "
+                "Is a 2-week sleep focus reasonable to try?"
             ),
-            "evidence": whatif.get("based_on", {}).get("method", ""),
+            "evidence": (whatif.get("sources") or [{}])[0].get("excerpt", "")[:120],
+            "evidence_date": (whatif.get("sources") or [{}])[0].get("cause_date", ""),
         })
 
     if not questions:
         questions.append({
-            "topic": "general",
-            "question": "I'd like to review lifestyle patterns from my tracked notes before our visit.",
+            "topic": "tracking",
+            "question": f"I've been logging {days} days — can we review patterns together?",
             "evidence": "",
+            "evidence_date": "",
         })
 
     return {
         "questions": questions,
         "count": len(questions),
-        "disclaimer": "Suggested discussion topics — not medical advice.",
+        "disclaimer": "Discussion topics from your data — not medical advice.",
     }

@@ -66,6 +66,28 @@ def _pattern_cards(correlations: List[Dict[str, Any]]) -> str:
     return "\n".join(cards) or "<p>No strong correlations yet.</p>"
 
 
+def _executive_summary(brief: Dict[str, Any]) -> str:
+    if not brief.get("top_insights"):
+        return "<p>Log more daily notes to unlock personal patterns.</p>"
+    cards = []
+    for ins in brief["top_insights"][:3]:
+        quote = ""
+        if ins.get("evidence_quote"):
+            quote = f'<blockquote>📎 {_esc(ins.get("evidence_date"))}: {_esc(ins["evidence_quote"])}</blockquote>'
+        cards.append(
+            f'<div class="insight-card">'
+            f'<h3>{_esc(ins["headline"])}</h3>'
+            f'<p>{_esc(ins["detail"])}</p>{quote}'
+            f'<p class="action"><strong>Try:</strong> {_esc(ins["action"])}</p></div>'
+        )
+    vs = "".join(f"<li>{_esc(v)}</li>" for v in brief.get("vs_generic_llm", []))
+    return (
+        f'<p class="one-liner">{_esc(brief.get("one_liner", ""))}</p>'
+        + "".join(cards)
+        + f'<div class="vs-llm"><h4>Why this beats asking a generic LLM</h4><ul>{vs}</ul></div>'
+    )
+
+
 def generate_html_report(
     analysis: Dict[str, Any],
     apple: Dict[str, Any],
@@ -73,10 +95,12 @@ def generate_html_report(
     whatif: Dict[str, Any] | None = None,
     audit: Dict[str, Any] | None = None,
     disclaimer: str = "",
+    brief: Dict[str, Any] | None = None,
 ) -> str:
     today = datetime.date.today().isoformat()
     whatif = whatif or {}
     audit = audit or {}
+    brief = brief or {}
     projected = whatif.get("projected_outcomes", [])
     whatif_html = "".join(
         f'<li><strong>{_esc(p.get("signal"))}</strong>: {_esc(p.get("change_percent"))}% '
@@ -115,11 +139,18 @@ def generate_html_report(
   .lag {{ color: #64748b; font-weight: normal; font-size: 0.85rem; }}
   blockquote {{ margin: 8px 0 0; padding-left: 12px; border-left: 3px solid #cbd5e1; font-size: 0.85rem; color: #475569; }}
   .disclaimer {{ background: #fffbeb; border: 1px solid #fde68a; padding: 12px; border-radius: 8px; font-size: 0.9rem; }}
+  .insight-card {{ background: #eff6ff; border-left: 4px solid #2563eb; padding: 14px; margin: 12px 0; border-radius: 0 8px 8px 0; }}
+  .one-liner {{ font-size: 1.15rem; font-weight: 600; color: #1e40af; margin-bottom: 16px; }}
+  .action {{ font-size: 0.9rem; color: #334155; }}
+  .vs-llm {{ background: #f1f5f9; padding: 14px; border-radius: 8px; margin-top: 16px; font-size: 0.9rem; }}
+  .vs-llm h4 {{ margin: 0 0 8px; font-size: 0.95rem; }}
 </style>
 </head>
 <body>
 <h1>VitaSide Health Pattern Report</h1>
-<p class="sub">Generated {today} · Omi {analysis.get("files_scanned", 0)} files · Apple {apple.get("source", "?")}</p>
+<p class="sub">Generated {today} · {analysis.get('files_scanned', 0)} files · {analysis.get('unique_dates', 0)} days · Apple {apple.get('source', '?')}</p>
+
+<section><h2>Your 3 Key Insights (from your data)</h2>{_executive_summary(brief)}</section>
 
 <div class="grid">
   <div class="stat"><b>{analysis.get("unique_dates", 0)}</b> days</div>
@@ -128,7 +159,7 @@ def generate_html_report(
   <div class="stat"><b>{audit.get("entries", 0)}</b> audit events</div>
 </div>
 
-<section><h2>Timeline</h2>{_timeline_rows(entries)}</section>
+<section><h2>Timeline (last 21 days)</h2>{_timeline_rows(entries, max_days=21)}</section>
 <section><h2>Top Patterns</h2>{_pattern_cards(analysis.get("temporal_correlations", []))}</section>
 <section><h2>What-If Projection</h2><ul>{whatif_html}</ul>
 <p><small>{_esc(whatif.get("based_on", {}).get("method", ""))}</small></p></section>

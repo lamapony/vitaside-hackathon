@@ -36,6 +36,7 @@ from anonymize import anonymize_text, anonymize_citations
 from visit_questions import generate_visit_questions as build_visit_questions
 from export_obsidian import build_obsidian_note
 from analytics_depth import add_pvalues, weekly_summary, compare_periods as compare_periods_analysis
+from actionable_insights import build_actionable_briefing, format_briefing_terminal
 
 _MANIFEST: Optional[Dict[str, Any]] = None
 
@@ -264,6 +265,18 @@ def _parseable_count(vault: Path, cap: int = 200) -> int:
         files.extend(base.rglob("*.md"))
     files = files[:cap]
     return sum(1 for f in files if _parse_omi_file(f))
+
+
+def _build_brief(entries: List[Dict], analysis: Dict[str, Any]) -> Dict[str, Any]:
+    by_date = _entries_by_date(entries)
+    merge = merge_with_omi(by_date, parse_daily(_find_apple_export()))
+    whatif = _simulate_whatif_core(entries, {
+        "intervention": "consistent_sleep_7_5h",
+        "duration_days": 14,
+        "target_signals": ["mood_low", "stress", "symptom_pain"],
+    })
+    period = compare_periods_analysis(entries, 14)
+    return build_actionable_briefing(analysis, merge, whatif, period)
 
 
 def _resolve_vault() -> Path:
@@ -610,7 +623,7 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
     co = sum(1 for sigs in by_date.values() if "sleep" in sigs and "stress" in sigs)
     vault = _resolve_vault()
     manifest = _get_manifest()
-    return _with_gates({
+    core = {
         "version": "1.0-mvp",
         "sidecar": manifest.get("name"),
         "sidecar_expired": is_expired(manifest),
@@ -628,8 +641,18 @@ def analyze_lifestyle_patterns(time_range: str = "last_90_days") -> Dict[str, An
         "apple_patterns": apple,
         "recommendations": ["Collect more Omi notes on sleep/mood", "Export Apple Health data"],
         "audit_summary": audit_summary(5),
-        "phase": "sprint-2-4",
-    })
+        "phase": "demo-polish",
+    }
+    core["actionable_briefing"] = _build_brief(entries, core)
+    return _with_gates(core)
+
+@mcp.tool()
+def get_actionable_briefing() -> Dict[str, Any]:
+    """Top insights from YOUR data — with citations. The moat vs generic LLM chat."""
+    entries = _scan_omi(120, tool="get_actionable_briefing")
+    analysis = analyze_lifestyle_patterns()
+    brief = analysis.get("actionable_briefing") or _build_brief(entries, analysis)
+    return _with_gates(brief)
 
 @mcp.tool()
 def find_correlation(metric_a: str = "sleep", metric_b: str = "stress", lag: int = 1) -> Dict[str, Any]:
@@ -767,7 +790,8 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         }), ensure_ascii=False, indent=2)
 
     if format == "html":
-        html_out = generate_html_report(analysis, apple, entries, whatif, audit_info, DISCLAIMER)
+        brief = analysis.get("actionable_briefing") or _build_brief(entries, analysis)
+        html_out = generate_html_report(analysis, apple, entries, whatif, audit_info, DISCLAIMER, brief)
         out_path = _SCRIPT_DIR / "out" / f"vitaside-report-{datetime.date.today()}.html"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(html_out, encoding="utf-8")
@@ -778,7 +802,10 @@ def generate_doctor_report(format: str = "markdown", include_whatif: bool = True
         by_date = _entries_by_date(entries)
         apple_daily = parse_daily(_find_apple_export())
         merge = merge_with_omi(by_date, apple_daily)
-        doc_html = generate_doctor_view(analysis, merge, whatif, DISCLAIMER)
+        doc_html = generate_doctor_view(
+            analysis, merge, whatif, DISCLAIMER,
+            analysis.get("actionable_briefing") or _build_brief(entries, analysis),
+        )
         out_path = _SCRIPT_DIR / "out" / f"vitaside-doctor-{datetime.date.today()}.html"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(doc_html, encoding="utf-8")

@@ -2,7 +2,15 @@
 
 **One command before judges:** `./run-demo-full.sh --hardening`
 
-**Single dry-run:** `./run-demo.sh`
+**Single dry-run (polished narrative):** `./run-demo.sh`
+
+Shows **actionable briefing** — dated citations, not generic LLM advice.
+
+---
+
+## The "why not ChatGPT?" line (memorize)
+
+> "ChatGPT can tell you sleep affects mood. VitaSide shows that **on March 31** you wrote *«Опять перегруз…»* and your **own 86 days** of notes show mood_low→stress with **2.2× lift** — with an audit log of every file read. That's not a chatbot guess."
 
 ---
 

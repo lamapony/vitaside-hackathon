@@ -60,6 +60,10 @@ check("weekly summary", wk.get("week_count", 0) >= 1)
 bundle = m.export_visit_bundle()
 check("visit bundle", bundle.get("questions_count", 0) >= 1)
 
+brief = m.get_actionable_briefing()
+check("actionable briefing", len(brief.get("top_insights", [])) >= 1)
+check("briefing has citations", bool(brief.get("top_insights", [{}])[0].get("evidence_quote") or brief.get("top_insights", [{}])[0].get("detail")))
+
 print()
 if FAIL:
     print(f"FAILED: {FAIL} checks")

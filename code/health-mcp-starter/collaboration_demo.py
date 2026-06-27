@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""VitaSide collaboration demo — thin CLI over MCP core."""
-import json
+"""Collaboration demo — sharp narrative, no raw JSON dumps."""
 import os
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 os.environ.setdefault("OMI_VAULT_PATH", str(ROOT / "demo-data" / "vault"))
-bundle = ROOT / "sidecars" / "sleep-stress-sidecar" / "manifest.yaml"
+bundle = ROOT / "sidecars/sleep-stress-sidecar/manifest.yaml"
 if bundle.exists():
     os.environ.setdefault("VITASIDE_MANIFEST", str(bundle))
 
@@ -19,22 +17,23 @@ spec.loader.exec_module(vita)
 
 def main():
     result = vita._collaborative_insight_core(vita.DEFAULT_HOST_CONTEXT)
-    result["disclaimer"] = vita.DISCLAIMER
+    top = result.get("evidence", {}).get("top_correlation", {})
     print("=" * 60)
-    print("VITASIDE COLLABORATION DEMO")
+    print("COLLABORATION — why two agents beat one LLM")
     print("=" * 60)
     print()
-    print("🧠 MAIN AGENT knows:", len(vita.DEFAULT_HOST_CONTEXT["events"]), "life events (travel + deadlines)")
-    print("🔬 SIDECAR knows:", result["evidence"].get("top_correlation", {}))
+    print("Hermes (main):  5 life events — flights, deadlines (calendar context)")
+    print(f"Sidecar:        {top.get('cause', '?')}→{top.get('effect', '?')} lag {top.get('lag', '?')}d, lift {top.get('lift_ratio', '?')}×")
+    cite = (top.get("citations") or [{}])[0]
+    if cite.get("excerpt"):
+        print(f"                📎 {cite.get('date')}: \"{cite['excerpt'][:70]}…\"")
     print()
-    print("✨ COMBINED:")
-    print("  ", result["collaborative_insight"])
+    print("Combined insight (only possible with both):")
+    print(f"  {result['collaborative_insight']}")
     print()
-    print(f"   Confidence: {result['confidence']}")
-    print(f"   {result['disclaimer']}")
+    print(f"Confidence: {result['confidence']}")
+    print(vita.DISCLAIMER)
     print("=" * 60)
-    if "--json" in sys.argv:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -22,8 +22,8 @@ type Step = {
 const STEPS: Step[] = [
   {
     n: 1,
-    title: "This page — grounded insight",
-    look: "Hero shows a real pattern (\"Stress → sleep…\") with a dated citation from your notes — not a guess. The \"Why not ChatGPT?\" card = source-cited, not generated.",
+    title: "This page — grounded insight + multi-source",
+    look: "Hero: real pattern (\"Stress → sleep…\") with a dated citation — not a guess. Below: \"Connected sources\" (6 local sources incl. doctor-prescribed device, proactive + Frame glasses vision) and the \"Frame glasses\" panel (8 lifestyle captures → doctor recommendation). \"Why not ChatGPT?\" = source-cited, not generated.",
   },
   {
     n: 2,

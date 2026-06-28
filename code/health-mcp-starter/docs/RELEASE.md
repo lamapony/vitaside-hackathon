@@ -34,16 +34,30 @@ export OMI_VAULT_PATH="/path/to/your/Obsidian Vault"
 
 ## Verify (offline)
 
+One command (VIT-45):
+
+```bash
+source .venv/bin/activate   # or: python3 -m venv .venv && source .venv/bin/activate
+make ci
+```
+
+`make ci` runs: pip deps, demo sidecar issue, pytest with `sidecar_protocol` coverage ≥80%, `test-mcporter.sh`, `test-mcporter-expired.sh`, `health-pattern-mcp.py --test`. Uses `demo-data/vault` only — no real `OMI_VAULT_PATH`.
+
+Manual equivalent:
+
 ```bash
 source .venv/bin/activate
 python -m pip install -r requirements.txt -r requirements-dev.txt
-python -m pytest tests/ -q
+python -m pytest tests/ -q --cov=sidecar_protocol --cov-fail-under=80
 python test_mvp.py
 bash test-mcporter.sh
+bash test-mcporter-expired.sh
 python health-pattern-mcp.py --test
 ```
 
-Expected: pytest green, MVP script prints `ALL MVP CHECKS PASSED`, mcporter smoke passes.
+GitHub Actions: `.github/workflows/vitaside-ci.yml` at monorepo root (paths under `code/health-mcp-starter/`).
+
+Expected: pytest green, mcporter smoke passes, expired manifest fail-closed.
 
 ## MCP / Hermes wiring
 

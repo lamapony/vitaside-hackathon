@@ -5,6 +5,7 @@ All notable changes to the VitaSide MCP implementation (`health-mcp-starter`).
 ## [0.2.0-productization] — 2026-06-28
 
 ### Added
+- VIT-45: `Makefile` `make ci`, monorepo workflow `.github/workflows/vitaside-ci.yml`, pytest-cov gate on `sidecar_protocol` (≥80%).
 - `install.sh` + `scripts/vitaside_paths.sh` — repo-relative `VITASIDE_MANIFEST` / `OMI_VAULT_PATH` resolver
 - `docs/RELEASE.md` — cold-start, verify, and MCP wiring
 - Pytest modules for sidecar core, visit packet, SQLite longitudinal store
@@ -15,10 +16,10 @@ All notable changes to the VitaSide MCP implementation (`health-mcp-starter`).
 - Default manifest resolution in `sidecar_protocol.py` remains relative to package root (no user home paths)
 
 ### Verify (release gate)
-- `./install.sh` → `./setup.sh` path + issued demo sidecars
-- `python -m pytest tests/` — full offline suite
-- `python test_mvp.py` — acceptance script
+- `make ci` (VIT-45) or `./install.sh` → `./setup.sh` path + issued demo sidecars
+- `python -m pytest tests/` — full offline suite + `sidecar_protocol` coverage ≥80%
 - `bash test-mcporter.sh` — MCP stdio smoke
+- `bash test-mcporter-expired.sh` — TTL fail-closed
 
 ### Notes
 - **G2 trunk:** integration work continues on `vitaside/*` branches; tag `0.2.0-productization` marks packaging slice (VIT-41), not a separate repo fork unless CEO records otherwise.

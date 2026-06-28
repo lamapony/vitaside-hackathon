@@ -27,3 +27,4 @@ code/health-mcp-starter/sidecars/*/manifest.yaml
 code/health-mcp-starter/ui/node_modules/
 code/health-mcp-starter/ui/dist/
 code/health-mcp-starter/local-data/
+code/health-mcp-starter/mcp-config.local.json

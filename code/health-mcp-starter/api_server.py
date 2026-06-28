@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, Query, UploadFile, File  # type: ignore[import-not-found]
+from fastapi import FastAPI, Query, UploadFile, File, Form  # type: ignore[import-not-found]
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore[import-not-found]
 from fastapi.responses import FileResponse, JSONResponse  # type: ignore[import-not-found]
 from pydantic import BaseModel  # type: ignore[import-not-found]
@@ -73,7 +73,7 @@ class AzureEnhanceRequest(BaseModel):
     user_consent: bool = True
     anonymize: bool = True
     prompt_hint: str = ""
-    locale: str = "ru"
+    locale: str = "en"
 
 
 class ProfileRequest(BaseModel):
@@ -185,7 +185,7 @@ def analysis_mechanics() -> Dict[str, Any]:
 
 
 @app.get("/api/narrative")
-def narrative(locale: str = Query(default="ru")) -> Dict[str, Any]:
+def narrative(locale: str = Query(default="en")) -> Dict[str, Any]:
     return _with_error(lambda: vita.get_local_narrative(locale))
 
 
@@ -201,6 +201,9 @@ def timeline(limit: int = Query(default=90, ge=1, le=365)) -> Dict[str, Any]:
                 "sleep_quality": entry.get("sleep_quality", "unknown"),
                 "snippet": entry.get("snippet", ""),
                 "quality": entry.get("quality", 0),
+                "parser_confidence": entry.get("parser_confidence"),
+                "quality_warnings": entry.get("quality_warnings") or [],
+                "low_quality_excerpt": entry.get("low_quality_excerpt", False),
                 "time_of_day": entry.get("time_of_day"),
             })
         return {"count": len(rows), "entries": rows, "disclaimer": vita.DISCLAIMER}
@@ -407,26 +410,45 @@ def azure_enhance(req: AzureEnhanceRequest) -> Dict[str, Any]:
 
 
 import tempfile
-import shutil
 
-@app.post("/api/analyze-skin-photo", responses=API_ERROR_400)
+_SKIN_MAX_BYTES = 15 * 1024 * 1024  # 15 MB upload guard for skin photos
+
+
+@app.post("/api/analyze-skin-photo", responses={**API_ERROR_400, **API_ERROR_500})
 async def analyze_skin_photo_api(
     file: UploadFile = File(...),
-    user_consent: bool = False,
-    use_external: bool = False
+    user_consent: bool = Form(False),
+    use_external: bool = Form(False)
 ) -> Dict[str, Any]:
-    """Upload skin photo for preliminary local analysis."""
+    """Upload skin photo for local ABCDE description (NOT a diagnosis or risk score)."""
     if not user_consent:
         return JSONResponse(
             status_code=400,
-            content={"error": "user_consent is required", "disclaimer": "Consent required for analysis."},
+            content={
+                "error": "user_consent is required",
+                "disclaimer": "Consent required for analysis.",
+            },
         )
 
-    # Save to temp
+    # Stream with a size guard so a huge upload cannot exhaust memory/disk.
+    content = await file.read()
+    if len(content) == 0:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "empty file", "disclaimer": "No image content received."},
+        )
+    if len(content) > _SKIN_MAX_BYTES:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": f"file too large (max {_SKIN_MAX_BYTES // (1024*1024)} MB)",
+                "disclaimer": "Use a smaller or compressed image.",
+            },
+        )
+
     suffix = Path(file.filename or "photo.jpg").suffix or ".jpg"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp_path = Path(tmp.name)
-        content = await file.read()
         tmp.write(content)
 
     try:
@@ -436,11 +458,20 @@ async def analyze_skin_photo_api(
             use_external=use_external
         )
         result["original_filename"] = file.filename
+        # Validation/processing errors from the analyzer come back as an "error"
+        # field in the body — surface them as a 400 instead of a misleading 200.
+        if result.get("error"):
+            return JSONResponse(status_code=400, content=result)
         return result
+    except Exception as exc:  # noqa: BLE001 — never leak a stack trace to the client
+        return JSONResponse(
+            status_code=500,
+            content={"error": "analysis_failed", "disclaimer": "Skin analysis could not complete."},
+        )
     finally:
         try:
             tmp_path.unlink()
-        except:
+        except Exception:  # noqa: BLE001
             pass
 
 if __name__ == "__main__":

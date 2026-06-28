@@ -25,62 +25,61 @@ SEED = 42
 DAYS = 90
 OUT_VAULT = Path(__file__).parent / "demo-data" / "vault"
 
-# Russian-language note fragments per signal (match the server's SIGNAL_PATTERNS regexes)
+# English note fragments per signal (match the server's SIGNAL_PATTERNS regexes)
 FRAGMENTS = {
     "sleep_poor": [
-        "Опять плохо спал ночью, проснулся разбитый.",
-        "Бессонница, ворочался до трёх, почти не выспался.",
-        "Ночные пробуждения, сон рваный, устал из-за сна.",
+        "Slept poorly again last night, woke up exhausted.",
+        "Insomnia — tossed until 3am, barely got any sleep.",
+        "Woke up several times, sleep was fragmented and restless.",
     ],
     "sleep_good": [
-        "Спал отлично, проснулся бодрым.",
-        "Хороший крепкий сон, выспался наконец.",
+        "Slept great and woke up feeling refreshed.",
+        "Solid good sleep — finally caught up on rest.",
     ],
     "stress": [
-        "На работе сильный стресс, весь день на нервах.",
-        "Тревога и напряжение, переживаю из-за дедлайна.",
-        "Опять перегруз, чувствую как выгораю.",
+        "High stress at work, nerves on edge all day.",
+        "Anxiety and tension worrying about the deadline.",
+        "Burned out again, feeling overloaded.",
     ],
     "mood_low": [
-        "Настроение плохое, какая-то тоска и апатия.",
-        "Грустно и тяжело, день прошёл уныло.",
-        "Чувствую себя разбитым и опустошённым.",
+        "Low mood today, kind of flat and apathetic.",
+        "Sad and heavy day, everything felt gloomy.",
+        "Feeling drained and empty inside.",
     ],
     "mood_good": [
-        "Сегодня отличное настроение, всё классно и бодро.",
-        "Радостно, прилив энергии, вдохновлён.",
+        "Great mood today, energetic and upbeat.",
+        "Happy and inspired, good energy.",
     ],
     "symptom_pain": [
-        "С утра болит голова, мигрень не проходит.",
-        "Головная боль пульсирует уже второй день, слабость.",
+        "Headache since morning, migraine won't quit.",
+        "Pulsing headache second day running, weak and tired.",
     ],
     "exercise": [
-        "Утром пробежка, потом лёгкая зарядка.",
-        "Сходил на тренировку, хорошая прогулка вечером.",
+        "Morning run and a light workout.",
+        "Good gym session and an evening walk.",
     ],
     "caffeine_late": [
-        "Вечером выпил кофе перед сном, зря наверное.",
-        "Поздний эспрессо, опять кофеин на ночь.",
+        "Had coffee before bed — probably a mistake.",
+        "Late espresso, caffeine too close to sleep.",
     ],
     "social": [
-        "Встретился с друзьями, хороший разговор.",
+        "Met friends, good conversation.",
     ],
-    # Condition-pack demo phrases (bipolar / migraine tracking)
     "migraine_episode": [
-        "Пульсирующая мигрень с утра, выпил ибупрофен.",
-        "Головная боль не проходит, принял суматриптан.",
-        "Мигрень, тошнота, лёг в тёмную комнату.",
+        "Pulsing migraine this morning, took ibuprofen.",
+        "Headache won't go away, took sumatriptan.",
+        "Migraine with nausea, dark room and rest.",
     ],
     "bipolar_med": [
-        "Принял литий утром как обычно.",
-        "Выпил лекарство, всё по расписанию.",
+        "Took lithium this morning as usual.",
+        "Took my meds on schedule.",
     ],
     "bipolar_elevated": [
-        "Мало спал но бодр — три часа сна и полон энергии.",
-        "Прилив сил, не могу уснуть от идей, на взводе.",
+        "Only three hours sleep but wired with energy.",
+        "Racing ideas, couldn't sleep, feeling on edge.",
     ],
     "bipolar_irritable": [
-        "Раздражительность на мелочи, срываюсь на всех.",
+        "Irritable over small things, snapping at everyone.",
     ],
 }
 

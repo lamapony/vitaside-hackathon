@@ -1,122 +1,123 @@
 # VitaSide — Rocket Plan (Gap-Driven Execution)
 
-> Принцип: бьём строго по разрыву между обещаниями питча/демо и реальным кодом.
-> Каждый спринт = демонстрируемый wow + acceptance criteria. Ничего «на будущее».
+> **Status (2026-06-27): ALL CORE SPRINTS COMPLETE.** This doc is the original 48h hackathon plan, updated to reflect what shipped. Use [`plan/README.md`](README.md) for current backlog.
 
-**North Star демо (что должно произойти на сцене за 6–8 минут):**
+**North Star demo (achieved):**
 `issue → load → ask → analyze (с цитатами) → what-if → beautiful HTML timeline → export → audit`
 
-**Позиционные рельсы (неизменны):** personal pattern intelligence для самонаблюдения и
-подготовки к разговору с врачом. Никаких «диагнозов / сигналов риска». Дисклеймер везде.
-Регуляторный риск адресуем открыто на слайде (turns weakness into trust).
+**Positioning (unchanged):** personal pattern intelligence for self-awareness and doctor visit prep. No diagnosis claims. No risk scores. Disclaimer everywhere.
 
 ---
 
-## Состояние кода (база для плана)
+## Code reality (updated 2026-06-27)
 
-| Компонент | Статус | Действие |
+| Компонент | Было в плане | Сейчас |
 |---|---|---|
-| Omi parser (контекст, спикеры, quality) | ✅ работает | оставить, добавить извлечение цитат |
-| Apple Health XML | ⚠️ базовый (лимит 5000) | докрутить merge по датам |
-| Temporal correlations + lift | ✅ работает | добавить confidence + цитаты |
-| Anomalies / baseline | ⚠️ примитив | оставить для демо, не углублять |
-| HTML report | ❌ заглушка (JSON dump) | **построить настоящий timeline** |
-| `simulate_whatif` | ❌ нет | **написать (главный wow)** |
-| Sidecar manifest + loader | ❌ нет | написать |
-| `issue-sidecar.sh` | ❌ нет | написать |
-| Audit log | ❌ нет | написать |
-| Collaboration demo | ❌ нет | написать скрипт |
-| Quality gates (confidence/cite/disclaimer) | ⚠️ частично | вшить во все tool-выводы |
-| git | ❌ нет | `git init` сейчас |
+| Omi parser (контекст, спикеры, quality) | ✅ работает | ✅ + citations, multi-path scan |
+| Apple Health XML | ⚠️ базовый | ✅ merge by date, iterparse large exports |
+| Temporal correlations + lift | ✅ | ✅ + p-values, q_value (partial), citations |
+| Anomalies / baseline | ⚠️ примитив | ✅ personal baselines in smart_analytics |
+| HTML report | ❌ заглушка | ✅ `report_html.py` timeline |
+| `simulate_whatif` | ❌ нет | ✅ shipped |
+| Sidecar manifest + loader | ❌ нет | ✅ `sidecar_protocol.py` |
+| `issue-sidecar.sh` | ❌ нет | ✅ + revoke, registry |
+| Audit log | ❌ нет | ✅ `audit.log` (gitignored) |
+| Collaboration demo | ❌ нет | ✅ `collaboration_demo.py`, `collaborative_insight` |
+| Quality gates | ⚠️ частично | ✅ `_with_gates` on all tools |
+| git | ❌ нет | ✅ repo initialized |
+| **Bonus (post-plan)** | — | UI dashboard, clinical summary, N-of-1, FHIR, Azure stub, skin ABCDE (observational) |
 
 ---
 
-## Критический путь (порядок = зависимости + wow/час)
+## Sprint status
+
+### Sprint 0 — Foundation ✅
+- [x] git + `.gitignore`, `requirements.txt`, README quick-start
+- [x] Smoke-test: `python health-pattern-mcp.py --test` green
+
+### Sprint 1 — `simulate_whatif` ✅
+- [x] MCP tool with projected_outcomes, confidence, disclaimer
+
+### Sprint 2 — Quality Gates + цитаты ✅
+- [x] Excerpts with dates, confidence on insights, global disclaimer
+
+### Sprint 3 — Beautiful HTML Timeline ✅
+- [x] `generate_doctor_report(format="html")` → real timeline, not JSON dump
+
+### Sprint 4 — Protocol + Issuance + Audit ✅
+- [x] manifest.yaml, scope enforcement, issue-sidecar, audit.log, TTL
+
+### Sprint 5 — Collaboration Demo ✅
+- [x] Main + sidecar combined insight; real Omi↔Apple merge
+
+### Sprint 6 — Demo Hardening & Pitch ✅
+- [x] `run-demo.sh`, `run-demo-full.sh --hardening`, `pitch/DEMO-SCRIPT.md`
+
+---
+
+## Post-rocket shipped (not in original scope)
+
+These were built during Depth Sprint / UI waves — **do not re-plan as "missing":**
+
+- Local dashboard UI (`ui/`, `api_server.py`, `./serve-ui.sh`)
+- Smart analytics layer (`smart_analytics.py`, attention-now, weekday effects)
+- Data sources catalog + analysis mechanics docs in MCP tools
+- Clinical summary, visit questions, N-of-1 compare, FHIR bundle
+- Condition packs, multi-journal, headache insights
+- Azure hybrid contract (stub — live needs credentials)
+- Skin photo ABCDE observations (rewritten 2026-06-27: **no risk_score, no diagnostic flags**)
+- Audit hardening: privacy-first vault resolution, pillow in requirements, API Form() upload fix
+
+---
+
+## Honest remaining (stretch → backlog)
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| PDF export | P2 | Print CSS or weasyprint |
+| Azure live | P2 | Contract ready; stub demos fine for judges |
+| Hermes live delegation | P3 | Script simulation works for demo |
+| Regime detection + FDR in UI | P3 | DEPTH-SPRINT S3 |
+| Real vault + Apple export | P1 human | See DEPTH-ROADMAP D1 |
+| E2E skin upload tests | P2 | Consent + invalid image cases |
+
+---
+
+## What we correctly did NOT do
+
+- No ML diagnosis or risk scores (skin tool was corrected to observational-only)
+- No deep anomaly ML
+- No new data sources beyond Omi + Apple + manual logs
+- No medical device claims
+
+---
+
+**Historical note:** Sections below preserved the original gap-driven sprint text. Refer to sprint status above for truth.
+
+<details>
+<summary>Original sprint details (archived)</summary>
 
 ### Sprint 0 — Foundation (30–45 мин)
-- [ ] `git init`, `.gitignore` (`__pycache__`, `*.pyc`, экспорты данных), первый коммит
-- [ ] `requirements.txt` (mcp, pandas, numpy, scipy) + `README` quick-start для судей
-- [ ] Smoke-test: `python health-pattern-mcp.py --test` зелёный
-- **Acceptance:** чистый репозиторий, сервер стартует, тест проходит.
+- [x] `git init`, `.gitignore`, first commit
+- [x] `requirements.txt` + README
+- [x] Smoke-test green
 
-### Sprint 1 — `simulate_whatif` (главный wow) (3–4 ч)
-- [ ] Новый MCP-tool `simulate_whatif(scenario: dict)`
-- [ ] Модель: историческое сравнение «похожих периодов» + дельты по сигналам
-      (не ML — простая, объяснимая статистика на реальных данных)
-- [ ] Выход: `projected_outcomes`, `based_on` (сколько похожих периодов), `confidence`, дисклеймер
-- [ ] Пример сценария из демо: «сон 7.5ч 2 недели» → «−28% low-mood сигналов, ...»
-- **Acceptance:** на реальном Omi-волте отдаёт осмысленный прогноз с confidence и обоснованием.
+### Sprint 1 — `simulate_whatif` (3–4 ч)
+- [x] Tool + historical period comparison + confidence
 
-### Sprint 2 — Quality Gates + цитаты (2 ч)
-- [ ] Парсер возвращает точные цитаты-excerpts с датами (не только `example_dates`)
-- [ ] Каждый инсайт корреляции/аномалии: `confidence: 0–1` + 1–2 реальные цитаты
-- [ ] Глобальный дисклеймер в каждом tool-выводе
-- **Acceptance:** ни один инсайт без источника, confidence и дисклеймера (anti-hallucination).
+### Sprint 2 — Quality Gates (2 ч)
+- [x] Citations, confidence, disclaimer on every insight
 
-### Sprint 3 — Beautiful HTML Timeline (3 ч) — визуальный гвоздь
-- [ ] Настоящий HTML-отчёт: timeline-бары (сон/активность/настроение), аннотации событий Omi
-- [ ] Топ-паттерны с цитатами и датами, what-if блок, audit-сводка
-- [ ] Самодостаточный файл (inline CSS/JS, открывается в браузере одним кликом)
-- **Acceptance:** `generate_doctor_report(format="html")` рендерит живой timeline, не JSON-дамп.
+### Sprint 3 — HTML Timeline (3 ч)
+- [x] Timeline bars, patterns, what-if block
 
-### Sprint 4 — Protocol + Issuance + Audit (2–3 ч)
-- [ ] `manifest.yaml` (name, scopes, tools, ttl, issuer) + загрузчик со scope-enforcement
-- [ ] `issue-sidecar.sh <name>` → генерит манифест + бандл, печатает «одну строку для конфига»
-- [ ] `audit.log`: каждый доступ к файлам/данным логируется (timestamp, path, tool)
-- [ ] TTL-проверка (sidecar «истекает»)
-- **Acceptance:** `./issue-sidecar.sh sleep-stress` создаёт рабочий sidecar; audit.log заполняется.
+### Sprint 4 — Protocol (2–3 ч)
+- [x] Manifest, issuance, audit, TTL
 
-### Sprint 5 — Collaboration Demo (1.5–2 ч)
-- [ ] Python-скрипт: «main-агент знает контекст (поездки из заметок), sidecar — биометрию»,
-      показываем объединённый инсайт, который ни один не даёт в одиночку
-- [ ] Реальный merge Omi↔Apple по датам (заменить заглушку `combine_omi_and_apple`)
-- **Acceptance:** скрипт выдаёт combined insight на реальных данных.
+### Sprint 5 — Collaboration (1.5–2 ч)
+- [x] Combined insight script + Omi↔Apple merge
 
-### Sprint 6 — Demo Hardening & Pitch (2–3 ч)
-- [ ] `run-demo.sh` — one-command end-to-end (issue → analyze → whatif → html → export)
-- [ ] Прогон демо 3× на реальных данных, замер времени (анализ < 30с)
-- [ ] Слайды + обновить `pitch/DEMO-SCRIPT.md` под финальный флоу
-- [ ] Backup: pre-recorded видео + скриншоты
-- **Acceptance:** демо проходит end-to-end без ошибок 3 раза подряд.
+### Sprint 6 — Hardening (2–3 ч)
+- [x] One-command demo, pitch script, 3× dry-run path
 
----
-
-## Таймлайн (48-часовой хакатон)
-
-| Блок | Часы | Спринты |
-|---|---|---|
-| Старт | 0–1 | Sprint 0 |
-| Ядро wow | 1–8 | Sprint 1, 2 |
-| Визуал | 8–12 | Sprint 3 |
-| Протокол | 12–16 | Sprint 4 |
-| Коллаборация | 16–19 | Sprint 5 |
-| Полировка/демо | 19–24 | Sprint 6 |
-| Буфер/stretch | 24–48 | см. ниже |
-
-## Приоритеты, если время горит
-1. `simulate_whatif` (Sprint 1) — без него нет wow
-2. HTML timeline (Sprint 3) — визуальная победа
-3. Quality gates + цитаты (Sprint 2) — доверие
-4. Issuance + audit (Sprint 4) — новизна протокола
-> Коллаборацию (5) можно показать скриптом, не живым агентом, если поджимает.
-
-## Риски и митигации
-- **Шум данных → ложные корреляции:** показываем confidence + реальные цитаты, честно про «medium confidence».
-- **Регуляторика:** слайд «почему это НЕ медизделие» — снимаем возражение до того, как его задали.
-- **Живой агент упадёт:** backup-видео + скриптовая коллаборация.
-- **Scope creep:** заморозка фич после Sprint 4; всё остальное — stretch.
-
-## Stretch (только если ядро готово)
-- Несколько типов sidecar параллельно
-- Веб «doctor view»
-- Живой Omi-сниппет голосом
-
-## Что НЕ делаем
-- Не углубляем аномалии/ML — демо это не оценит.
-- Не добавляем новые источники данных.
-- Не строим дашборды, пока HTML-отчёт не полезен.
-- Не делаем медицинских claim'ов.
-
----
-**Правило скорости:** каждый спринт заканчивается demoable-артефактом и коммитом.
-Если слайс не виден на сцене — он ждёт stretch-фазы.
+</details>

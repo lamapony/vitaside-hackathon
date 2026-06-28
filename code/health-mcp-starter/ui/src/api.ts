@@ -4,6 +4,9 @@ export type Insight = {
   detail: string;
   evidence_date?: string;
   evidence_quote?: string;
+  evidence_parser_confidence?: number;
+  low_quality_evidence?: boolean;
+  high_confidence_insight?: boolean;
   action?: string;
   why_not_llm?: string;
 };
@@ -32,6 +35,9 @@ export type TimelineEntry = {
   sleep_quality?: string;
   snippet?: string;
   quality?: number;
+  parser_confidence?: number;
+  quality_warnings?: string[];
+  low_quality_excerpt?: boolean;
   time_of_day?: string;
 };
 
@@ -186,8 +192,8 @@ export type DataSourceStatus =
 export type DataSource = {
   id: string;
   label: string;
-  label_ru: string;
-  type?: string;
+  label_ru?: string;
+  description?: string;
   privacy?: string;
   status: DataSourceStatus | string;
   provides?: string[];
@@ -326,6 +332,7 @@ export type N1Compare = {
   ci_high?: number;
   ci_95?: { low?: number | null; high?: number | null };
   p_value?: number | null;
+  q_value?: number | null;
   confidence?: string;
   example?: { date?: string; excerpt?: string };
   note?: string;

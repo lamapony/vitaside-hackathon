@@ -49,7 +49,7 @@ def _stub_enhance(payload: Dict[str, Any]) -> Dict[str, Any]:
     ins = payload.get("local_summary", {}).get("top_insights") or []
     smart = payload.get("local_summary", {}).get("smart_analysis")
     briefing = {"top_insights": ins, "data_footprint": payload.get("local_summary", {}).get("data_footprint", {})}
-    locale = payload.get("request", {}).get("locale", "ru")
+    locale = payload.get("request", {}).get("locale", "en")
     if smart or ins:
         narr = build_local_narrative(briefing, smart, locale)
         return {
@@ -178,3 +178,44 @@ def require_azure(manifest: Dict[str, Any], operation: str) -> None:
     allowed = contract_info(manifest)["allowed_operations"]
     if operation not in allowed:
         raise PermissionError(f"Operation '{operation}' not in manifest azure.allowed_operations")
+
+def _stub_embed_search(payload):
+    """Prototype stub for embed_search (Azure AI Search)."""
+    return {
+        "source": "local_stub",
+        "contract_version": CONTRACT_VERSION,
+        "search_results": [],
+        "note": "Prototype: would send embeddings only to Azure AI Search. Configure for live.",
+        "disclaimer": "Stub — enable live for real semantic search over consented embeddings.",
+    }
+
+def _stub_fhir_export(payload):
+    """Prototype stub for fhir_export (Azure Health Data Services)."""
+    cond = payload.get("local_summary", {}).get("condition_tracking") or {}
+    return {
+        "source": "local_stub",
+        "contract_version": CONTRACT_VERSION,
+        "fhir_resources": {
+            "DocumentReference": {"status": "current", "type": "VitaSide visit bundle"},
+            "Observations": [{"code": cond.get("condition_name", "health-patterns"), "value": "see local_summary"}],
+        },
+        "note": "Prototype: would convert minimized report to FHIR. Configure Azure Health Data Services for live.",
+        "disclaimer": "Stub — patterns only, not medical records.",
+    }
+
+def embed_search(payload):
+    violations = validate_outbound(payload)
+    if violations:
+        return {"error": "payload_validation_failed", "violations": violations}
+    if payload.get("request", {}).get("operation") != "embed_search":
+        return {"error": "wrong_operation", "expected": "embed_search"}
+    return _stub_embed_search(payload)
+
+def fhir_export(payload):
+    violations = validate_outbound(payload)
+    if violations:
+        return {"error": "payload_validation_failed", "violations": violations}
+    if payload.get("request", {}).get("operation") != "fhir_export":
+        return {"error": "wrong_operation", "expected": "fhir_export"}
+    return _stub_fhir_export(payload)
+

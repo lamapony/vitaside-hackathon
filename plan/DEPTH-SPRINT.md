@@ -1,11 +1,25 @@
 # VitaSide — Sprint по углублению (Science + Integration + Clinical Utility)
 
+> **Status (2026-06-27):** S1, S2, S3 **core deliverables shipped**. S4–S6 partial / backlog.  
+> **Verify:** `python3 test_mvp.py` · **Backlog:** `plan/README.md`
+
+| Sprint | Goal | Status |
+|--------|------|--------|
+| S1 Clinical Summary | 3-min doctor handoff | ✅ `clinical_summary.py`, doctor HTML, UI DoctorHandoff |
+| S2 PGHD / FHIR | EHR-ready bundle | ✅ `fhir_export.py` — validator / HAPI test ⚪ |
+| S3 N-of-1 & Science | Causal-ish moat | ✅ `n1_compare.py`, p-values — regime detection, FDR in UI ⚪ |
+| S4 Integration Hub | Azure + Hermes live | ⚪ stub only |
+| S5 UI Depth | OpenDesign polish | ✅ 6 tabs — mobile/a11y audit ⚪ |
+| S6 Real data | 60+ day loop | ⚪ human process |
+
+---
 > **Цель:** не «чат с LLM про здоровье», а **Personal Health Intelligence Layer** —
 > локальная наука на *ваших* данных + понятный handoff в клинику.
 >
 > **Уже есть (не переписывать):** Omi parser, lag correlations + p-values, personal baselines,
 > weekday effects, what-if, condition packs, cite-grounded narrative, sidecar protocol,
-> doctor HTML, PGHD context + auto-suggestions, OpenDesign UI, Azure contract (stub).
+> doctor HTML, clinical summary, N-of-1, FHIR export, PGHD context + auto-suggestions,
+> OpenDesign UI, Azure contract (stub), skin ABCDE observations (no risk score).
 
 ---
 

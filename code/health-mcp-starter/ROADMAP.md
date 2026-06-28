@@ -1,82 +1,87 @@
-# VitaCo Health MCP — ROADMAP
+# Health Patterns MCP — Roadmap
 
-## Статус: Phase 1 Complete ✅
+**Last updated:** 2026-06-27 · **MVP tag:** `mvp-1.0` · **Tests:** `python3 test_mvp.py` green
 
-### Phase 0 — MVP (Omi Only) ✅
-- [x] База: MCP сервер на FastMCP
-- [x] Парсинг Omi .md файлов (фронтматтер + текст)
-- [x] Сигналы: sleep, stress, mood_low, mood_good, symptom, food
-- [x] Co-occurrence анализ по датам
-- [x] generate_doctor_report
-- [x] list_data_sources
-- [x] _is_safe_path безопасность
+---
 
-### Phase 1 — Apple Health Integration ✅ (COMPLETED 2026-06-27)
-- [x] **Parser:** Apple Health export.xml (XML/ETree stream-parse)
-- [x] **Metrics parsed:** heart_rate (incl resting/walking), hrv_sdnn, steps, distance, flights, exercise_minutes, energy (basal/active), blood_pressure (sys/dia), spo2, weight, bmi, body_fat, respiratory_rate, sleep (core/deep/REM), audio exposure
-- [x] **Symptoms parsed:** 40+ types (headache, fatigue, back_pain, dizziness, nausea, mood_changes, etc.)
-- [x] **Activity Summaries:** Move/Exercise/Stand rings
-- [x] **Clinical Records:** metadata (allergies, immunizations, results)
-- [x] **Demo data generator:** 30 days realistic distributions
-- [x] **Tool: `load_apple_health_data`** — загрузка export.xml или демо
-- [x] **Tool: `analyze_apple_patterns`** — корреляции:
-  - HR + HRV тренды и интерпретация
-  - Sleep duration patterns + anomalies (<6h)
-  - Steps/activity + low activity days
-  - SpO2 averages + low readings
-  - Cross-correlation: sleep → next-day HRV
-  - Blood pressure averages
-  - Trends over time (first vs last third)
-- [x] **Tool: `combine_omi_and_apple`** — комбинация Omi + Apple по датам:
-  - Omi "сон" жалоба + Apple sleep data confirmation/mismatch
-  - Omi "стресс" + Apple elevated HR correlation
-- [x] **Doctor report updated:** включён Apple Health анализ
-- [x] **README updated** — полная документация Apple Health
-- [x] **ROADMAP created**
-- [x] **Tested with mcporter** — все 8 инструментов работают
+## Status summary
 
-### Phase 2 — SMART Analysis (NEXT)
-- [ ] Более умный парсинг Omi транскриптов (время, контекст)
-- [ ] Lag-корреляции: сон сегодня → настроение/HRV завтра
-- [ ] Еженедельные/ежемесячные агрегации
-- [ ] Выявление трендов по периодам
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 0 — Omi foundation | ✅ Complete | MCP, signals, scoped paths |
+| Phase 1 — Apple Health + merge | ✅ Complete | XML, demo fallback, Omi↔Apple by date |
+| Phase 1.5 — Hackathon depth | ✅ Complete | Sidecar, what-if, HTML reports, UI, Azure stub, clinical tools |
+| Phase 2 — Intelligence polish | 🟡 Mostly done | See remaining items below |
+| Phase 3 — Clinical output | 🟡 Partial | HTML ✅, PDF ❌, charts basic |
+| Phase 4 — Automation | ⚪ Not started | Scheduled import, export detection |
 
-### Phase 3 — Export & Visualization
-- [ ] PDF экспорт для врача
-- [ ] Obsidian note generation с встроенными данными
-- [ ] Визуализация: графики sleep/HRV/steps
+---
 
-### Phase 4 — Integration & Automation
-- [ ] Автоматический импорт Apple Health по расписанию
-- [ ] Обнаружение новых export.xml
-- [ ] Сравнение периодов (baseline vs current)
+## Phase 0 — Omi foundation ✅
+- [x] MCP server on FastMCP
+- [x] Omi `.md` parsing (frontmatter + body)
+- [x] Signals: sleep, stress, mood_low, mood_good, symptom, food, headache, …
+- [x] Date co-occurrence + lag correlations
+- [x] `generate_doctor_report`
+- [x] Scoped path safety + sidecar manifest enforcement
 
-## Apple Health XML Format Reference
+## Phase 1 — Apple Health ✅
+- [x] `load_apple_health_data` — export.xml or demo
+- [x] `analyze_apple_patterns` — HR, HRV, sleep, steps, SpO2 trends
+- [x] `combine_omi_and_apple` — merge by date (sleep/stress alignment)
+- [x] Doctor report includes Apple analysis
+- [x] Large export iterparse (>50 MB)
+- [x] README + mcporter tests
 
-Apple Health export создаётся через:
-`Settings > Privacy > Health > Export All Health Data`
+## Phase 1.5 — Hackathon depth (shipped beyond original roadmap) ✅
+- [x] Sidecar protocol: manifest, TTL, scopes, audit log, issue/revoke scripts
+- [x] `simulate_whatif` with confidence + disclaimer
+- [x] Quality gates: citations, confidence, disclaimer on all tool outputs
+- [x] HTML patient timeline + doctor view (`report_html.py`, `report_doctor.py`)
+- [x] Local dashboard UI (`ui/` + `api_server.py` + `./serve-ui.sh`)
+- [x] Smart analytics: personal baselines, weekday effects, attention-now
+- [x] Condition packs (migraine, bipolar), journals, headache insights
+- [x] Clinical summary, visit questions, N-of-1 compare, FHIR bundle export
+- [x] Azure hybrid contract (stub mode — no credentials required for demo)
+- [x] Skin photo ABCDE **observations only** (no risk score, no diagnostic flags)
+- [x] Privacy: vault resolves via `OMI_VAULT_PATH` → `~/Documents/Obsidian Vault` → demo (no hardcoded user paths)
 
-Формат:
-```xml
-<HealthData locale="en_RU">
-  <ExportDate value="2024-01-15 12:00:00 +0300"/>
-  <Me .../>
-  <Record type="HKQuantityTypeIdentifierHeartRate"
-          sourceName="Apple Watch"
-          unit="count/min"
-          value="72"
-          startDate="2024-01-15 10:30:00 +0300"
-          endDate="2024-01-15 10:30:00 +0300"
-          creationDate="..."/>
-  <ActivitySummary dateComponents="2024-01-15"
-                   activeEnergyBurned="423.5"
-                   activeEnergyBurnedGoal="600"
-                   appleExerciseTime="32"
-                   appleExerciseTimeGoal="30"
-                   appleStandHours="11"
-                   appleStandHoursGoal="12"/>
-  <ClinicalRecord type="AllergyRecord" identifier="..." sourceName="..."/>
-</HealthData>
+## Phase 2 — Intelligence layer (remaining)
+- [x] Enhanced Omi parsing (context words, speaker separation, quality scoring, time-of-day)
+- [x] Lag correlations with p-values / lift / citations
+- [x] Personal baseline bands + weekly summary + period compare
+- [x] Local cite-grounded narrative (`narrative_engine.py`)
+- [ ] Regime / change-point detection (`detect_regime_shifts` — planned in DEPTH-SPRINT S3)
+- [ ] FDR (q_value) on all correlation outputs in UI cards
+- [ ] Bootstrap confidence intervals on top correlation lift
+
+## Phase 3 — Clinical output (remaining)
+- [x] HTML reports for visits (patient + doctor)
+- [x] Obsidian export + visit bundle (`export_visit_bundle`, `export-for-doctor.sh`)
+- [x] Anonymization mode
+- [ ] PDF export (print CSS or weasyprint)
+- [ ] Rich inline charts (sleep / HRV / steps) beyond current timeline bars
+
+## Phase 4 — Automation (not started)
+- [ ] Scheduled Apple Health import
+- [ ] New export.xml detection
+- [ ] Baseline vs current comparison alerts
+
+---
+
+## Apple Health export
+
+iPhone: Settings → Privacy → Health → Export All Health Data.
+
+Large exports (100+ MB) use iterparse; full SAX streaming for multi-GB files is a future improvement.
+
+## Verify
+
+```bash
+./setup.sh
+python3 test_mvp.py          # ~56 checks + API contract
+./run-demo-full.sh --hardening
+./serve-ui.sh                # dashboard at :5173
 ```
 
-Файл может быть 100+ MB для многолетних данных. Используется ElementTree (in-memory до ~500MB) — для больших файлов рассмотреть SAX/iterparse в будущем.
+See also: `../../plan/DEPTH-ROADMAP.md` for post-MVP human milestones (real vault, doctor feedback).

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vitaside://contracts/outbound-data-policy/1.0",
+  "title": "VitaSide outbound data contract (template)",
+  "description": "Attach to share_report / legal appendix. Runtime payloads follow azure_contract.CONTRACT_VERSION.",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "purpose",
+    "forbidden_categories",
+    "allowed_fields",
+    "consent",
+    "retention",
+    "processors"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0" },
+    "purpose": {
+      "type": "string",
+      "enum": [
+        "visit_preparation_narrative",
+        "time_limited_clinician_view",
+        "fhir_interop_subset"
+      ]
+    },
+    "forbidden_categories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [
+        "raw_voice_transcripts",
+        "full_apple_health_export",
+        "vault_paths_and_filenames",
+        "unredacted_third_party_names",
+        "diagnostic_conclusions"
+      ]
+    },
+    "allowed_fields": {
+      "type": "object",
+      "properties": {
+        "aggregates": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["days_analyzed", "signal_counts", "temporal_correlations_top5"]
+        },
+        "excerpts": {
+          "type": "object",
+          "properties": {
+            "max_chars": { "type": "integer", "maximum": 500, "default": 140 },
+            "anonymize": { "type": "boolean", "default": true },
+            "max_per_insight": { "type": "integer", "default": 1 }
+          }
+        }
+      }
+    },
+    "consent": {
+      "type": "object",
+      "required": ["granted", "operation", "timestamp_utc"],
+      "properties": {
+        "granted": { "type": "boolean" },
+        "operation": {
+          "type": "string",
+          "enum": ["enhance_insight", "share_report", "embed_search", "fhir_export"]
+        },
+        "timestamp_utc": { "type": "string", "format": "date-time" }
+      }
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "cloud_payload_hours": { "type": "integer", "default": 48 },
+        "audit_log_local": { "type": "string", "default": "user_controlled_until_delete" }
+      }
+    },
+    "processors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "region": { "type": "string" }
+        }
+      },
+      "default": [
+        { "name": "Azure OpenAI", "role": "enhance_insight", "region": "EU (configurable)" },
+        { "name": "Azure Functions + Blob", "role": "share_report", "region": "EU (configurable)" }
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "pre_flight": { "const": "azure_contract.validate_outbound" },
+        "fingerprint_algo": { "const": "sha256_trunc16_sorted_json" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

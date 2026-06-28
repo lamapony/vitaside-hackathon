@@ -1,44 +1,87 @@
-# VitaSide Hackathon Tasks (Atomic, following agent-skills)
+# VitaSide Hackathon Tasks
 
-Use /plan style: small tasks, one at a time.
+**Synced:** 2026-06-27 · **Verify:** `./scripts/vitaside test` or `python3 code/health-mcp-starter/test_mvp.py`
 
-## Phase 1: Spec (Done in this plan)
-- [x] Create SPEC.md
+Use /plan style: small tasks, one at a time. Items marked ✅ are done in code; ⚪ are honest remaining work.
+
+---
+
+## Phase 1: Spec ✅
+- [x] Create `docs/SPEC.md`
 - [x] Define HealthPatternSkill workflow
 
-## Phase 2: Plan
+## Phase 2: Plan ✅
 - [x] Rocket plan: `plan/ROCKET-PLAN.md`
+- [x] Detailed plan: `plan/DETAILED-IMPLEMENTATION-PLAN.md`
+- [x] Status dashboard: `plan/README.md`
+
+---
 
 ## Build Tasks (Core)
-1. Extend MCP server with protocol manifest loader (scopes enforcement).
-2. Improve Omi parser (add timestamps, context words like сегодня/вчера, speaker separation, quality scoring) - port from previous work. ✅
-3. Add full Apple Health XML support for key metrics (sleep, HR, activity, SpO2). ⚠️ partial
-4. Implement temporal correlations (lags), anomalies vs baseline, stats (pandas/scipy). ✅
-5. Add `simulate_whatif` tool: based on historical deltas. ✅ Sprint 1
-6. Enhance reports: add timeline visualization (HTML with simple charts), citations. ✅ Sprint 3
-7. Add audit logging for all accesses. ✅ Sprint 4
-8. Create issuance script (generate manifest + sidecar bundle). ✅ Sprint 4
-9. Implement demo collaboration simulation (Python script emulating main + sidecar chat). ✅ Sprint 5
-10. Add quality gates in code: always confidence, sources, disclaimer. ✅ Sprint 2
-11. Demo data generator + run-demo.sh ✅ Sprint 0+1
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Sidecar manifest loader + scope enforcement | ✅ |
+| 2 | Omi parser: timestamps, context words, speakers, quality, time-of-day | ✅ |
+| 3 | Apple Health XML (sleep, HR, activity, SpO2, large export iterparse) | ✅ |
+| 4 | Temporal correlations (lags), baseline, scipy/pandas stats | ✅ |
+| 5 | `simulate_whatif` tool | ✅ |
+| 6 | HTML timeline reports + citations | ✅ |
+| 7 | Audit logging for data access | ✅ |
+| 8 | `issue-sidecar.sh` + revoke + registry | ✅ |
+| 9 | Collaboration demo (main + sidecar) | ✅ |
+| 10 | Quality gates: confidence, sources, disclaimer | ✅ |
+| 11 | Demo data generator + `run-demo.sh` / `run-demo-full.sh` | ✅ |
+| 12 | Local dashboard UI + `api_server.py` | ✅ |
+| 13 | Smart analytics (baselines, weekday, attention) | ✅ |
+| 14 | Clinical summary + N-of-1 + FHIR export | ✅ |
+| 15 | Azure hybrid contract (stub) | ✅ stub |
+| 16 | Skin ABCDE observations (no risk score) | ✅ hardened 2026-06-27 |
+| 17 | Privacy: no hardcoded vault paths; pillow in requirements | ✅ hardened 2026-06-27 |
+
+---
 
 ## Test Tasks
-11. Unit tests for new parser functions.
-12. Integration test with mcporter for new tools.
-13. End-to-end test script on real data, capture outputs for demo.
-14. Verify no data leaks, scoped access.
+
+| # | Task | Status |
+|---|------|--------|
+| 11 | Acceptance suite `test_mvp.py` (~56 checks + API contract) | ✅ |
+| 12 | mcporter integration `test-mcporter.sh` (15 tools) | ✅ |
+| 13 | End-to-end demo `run-demo-full.sh --hardening` | ✅ |
+| 14 | Scoped access / no data leaks (sidecar_protocol) | ✅ partial — revoke/expire edge cases |
+| 15 | Unit tests for isolated parser functions | ⚪ only via integration tests today |
+| 16 | E2E skin upload (consent, bad image, size limit) | ⚪ API manually verified, not in test_mvp |
+
+---
 
 ## Review & Polish
-15. Code cleanup, docs.
-16. Performance check (<30s analysis).
-17. Simplify outputs for judges.
-18. Create visual assets for pitch.
 
-## Ship
-19. Package demo (one-command runner). ✅ run-demo.sh + run-demo-full.sh
-20. Final pitch deck / script. ✅ pitch/DEMO-SCRIPT.md
-21. Test full demo flow 3x. ✅ run-demo-full.sh --hardening
+| # | Task | Status |
+|---|------|--------|
+| 15 | Code cleanup, docs | 🟡 plans synced 2026-06-27 |
+| 16 | Performance (<30s analysis on demo vault) | ✅ demo vault passes |
+| 17 | Simplify outputs for judges | ✅ |
+| 18 | Visual assets for pitch | ✅ `docs/index.html`, `pitch/` |
 
-Prioritize 1-9 + 13 + 19 for core demo. Use agent-skills: test each slice.
+---
 
-Start with task 1-2.
+## Ship ✅
+
+| # | Task | Status |
+|---|------|--------|
+| 19 | One-command runner | ✅ `./scripts/vitaside demo` |
+| 20 | Pitch script | ✅ `pitch/DEMO-SCRIPT.md` |
+| 21 | Demo dry-run 3× | ✅ `--hardening` |
+
+---
+
+## Next (post-hackathon backlog)
+
+1. Real `OMI_VAULT_PATH` + Apple Health export (human setup — DEPTH-ROADMAP D1)
+2. PDF export for doctor bundle
+3. Azure live (credentials)
+4. Hermes live delegation
+5. `regime_detection.py` + FDR in UI (DEPTH-SPRINT S3 remainder)
+6. E2E skin tests in `test_mvp.py`
+
+**Rule:** Do not reopen completed build tasks unless regressing. Extend tests for new backlog items only.

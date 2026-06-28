@@ -76,9 +76,9 @@ function SourceCard({ source }: { source: DataSource }) {
       <div className="source-header">
         <div>
           <p className="eyebrow">{source.id}</p>
-          <h2>{source.label_ru || source.label}</h2>
-          {source.label_ru && source.label !== source.label_ru && (
-            <p className="source-subtitle">{source.label}</p>
+          <h2>{source.label}</h2>
+          {source.description && source.description !== source.label && (
+            <p className="source-subtitle">{source.description}</p>
           )}
         </div>
         <StatusChip status={source.status} />
@@ -107,11 +107,11 @@ function SourceCard({ source }: { source: DataSource }) {
 
       {expanded && (
         <div className="source-details">
-          {(source.setup_steps_ru ?? source.setup_steps)?.length ? (
+          {(source.setup_steps ?? source.setup_steps_ru)?.length ? (
             <div>
               <h3>Setup steps</h3>
               <ol className="setup-steps">
-                {(source.setup_steps_ru ?? source.setup_steps ?? []).map((step) => (
+                {(source.setup_steps ?? source.setup_steps_ru ?? []).map((step) => (
                   <li key={step}>{step}</li>
                 ))}
               </ol>
@@ -171,7 +171,7 @@ function VaultNotReadyBanner({
     ? "VitaSide is pointed at a real vault path, but no markdown notes were discovered. Insights stay empty until Omi exports land in the expected folders."
     : "Notes exist in your vault, but the active sidecar manifest does not grant parse access. Re-issue the sidecar or widen allowed scopes.";
   const steps =
-    quickSetup?.length ? quickSetup : (omiSource?.setup_steps_ru ?? omiSource?.setup_steps ?? []);
+    quickSetup?.length ? quickSetup : (omiSource?.setup_steps ?? omiSource?.setup_steps_ru ?? []);
 
   return (
     <div className={`vault-not-ready-banner ${isEmpty ? "vault-empty" : "vault-blocked"}`}>

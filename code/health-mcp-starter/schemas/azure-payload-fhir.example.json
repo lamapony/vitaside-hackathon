@@ -1,0 +1,43 @@
+{
+  "contract_version": "1.0",
+  "generated_at": "2026-06-28T10:00:00+00:00",
+  "sidecar": {
+    "name": "azure-hybrid-sidecar",
+    "issuer": "local-user",
+    "version": "0.1"
+  },
+  "consent": {
+    "granted": true,
+    "operation": "fhir_export",
+    "locale": "en"
+  },
+  "data_minimization": {
+    "raw_transcripts": false,
+    "vault_paths": false,
+    "anonymized": true,
+    "max_excerpt_chars": 140,
+    "payload_fingerprint": "fhir789xyz012"
+  },
+  "local_summary": {
+    "days_analyzed": 42,
+    "files_scanned": 50,
+    "signal_counts": {
+      "sleep": 8,
+      "stress": 11
+    },
+    "condition_tracking": {
+      "condition_id": "migraine",
+      "condition_name": "Migraine tracking",
+      "days_analyzed": 42,
+      "track_items": ["headache_severity", "meds_taken"],
+      "metrics": ["avg_severity"],
+      "doctor_focus": ["triggers", "sleep correlation"],
+      "citations": []
+    }
+  },
+  "request": {
+    "operation": "fhir_export",
+    "locale": "en",
+    "prompt_hint": "convert to FHIR DocumentReference + Observations"
+  }
+}

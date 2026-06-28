@@ -4,9 +4,9 @@
   "vault_path": "code/health-mcp-starter/demo-data/vault",
   "summary": {
     "connected_sources": ["omi_vault", "sidecar_manifest", "host_context", "condition_packs", "audit_log"],
-    "needs_setup": ["apple_health", "azure_boost"],
+    "needs_setup": ["apple_health", "google_health", "azure_boost"],
     "primary_source": "omi_vault",
-    "optional_enrichment": ["apple_health", "host_context", "condition_packs"]
+    "optional_enrichment": ["apple_health", "google_health", "host_context", "condition_packs"]
   },
   "sources": [
     {
@@ -24,6 +24,13 @@
       "label_ru": "Экспорт Apple Health (export.xml)",
       "stats": { "mode": "demo_daily" },
       "setup_steps_ru": ["Здоровье → Экспорт → ~/Downloads/apple_health_export/"]
+    },
+    {
+      "id": "google_health",
+      "status": "demo_fallback",
+      "label_ru": "Экспорт Google Health / Fit / Health Connect",
+      "stats": { "mode": "demo_daily", "note": "Takeout or Health Connect export to ~/Downloads/google_health_export/" },
+      "setup_steps_ru": ["Google Takeout → Fit или экспорт Health Connect в локальную папку"]
     }
   ],
   "analysis_pipeline": [

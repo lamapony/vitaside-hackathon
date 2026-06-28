@@ -11,7 +11,7 @@ type Props = {
 
 function greeting(name?: string) {
   const h = new Date().getHours();
-  const part = h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
+  const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   return name ? `${part}, ${name}` : part;
 }
 
@@ -27,21 +27,21 @@ export function WelcomeHero({ briefing, sidecar, displayName, nextStep, onPrimar
       <div className="welcome-hero-inner">
         <p className="welcome-greeting">{greeting(displayName)}</p>
         <h1 className="welcome-headline">
-          {oneLiner ?? "Ваши паттерны здоровья — из ваших записей, не из интернета"}
+          {oneLiner ?? "Your health patterns — from your notes, not the internet"}
         </h1>
         <p className="welcome-sub">
-          VitaSide читает локальные заметки и wearables, находит связи во времени и готовит вас к визиту.
-          Это не диагноз — это ваш личный обзор с цитатами.
+          VitaSide reads local notes and wearables, finds patterns over time, and helps you prepare for visits.
+          Not a diagnosis — a personal, citation-backed overview.
         </p>
 
         <div className="welcome-stats">
           <div className="welcome-stat">
             <strong>{days || "—"}</strong>
-            <span>дней данных</span>
+            <span>days tracked</span>
           </div>
           <div className="welcome-stat">
             <strong>{briefing?.top_insights?.length ?? 0}</strong>
-            <span>наблюдений</span>
+            <span>observations</span>
           </div>
           <div className="welcome-stat">
             <strong>{footprint?.overlap_days ?? 0}</strong>
@@ -50,15 +50,15 @@ export function WelcomeHero({ briefing, sidecar, displayName, nextStep, onPrimar
           {isDemo && (
             <div className="welcome-stat demo">
               <strong>Demo</strong>
-              <span>демо-vault</span>
+              <span>sample vault</span>
             </div>
           )}
         </div>
 
         <div className="welcome-trust">
-          <span><Shield size={14} /> Локально</span>
-          <span><Sparkles size={14} /> С цитатами</span>
-          <span><Database size={14} /> {sidecar?.name ?? "Sidecar"} активен</span>
+          <span><Shield size={14} /> Local-first</span>
+          <span><Sparkles size={14} /> Citation-backed</span>
+          <span><Database size={14} /> {sidecar?.name ?? "Sidecar"} active</span>
         </div>
 
         {nextStep && onPrimaryAction && (
@@ -70,7 +70,7 @@ export function WelcomeHero({ briefing, sidecar, displayName, nextStep, onPrimar
 
       {top?.evidence_quote && (
         <aside className="welcome-proof">
-          <p className="eyebrow">Из ваших записей</p>
+          <p className="eyebrow">From your notes</p>
           <blockquote>{top.evidence_quote}</blockquote>
           {top.evidence_date && <p className="meta">{top.evidence_date}</p>}
         </aside>

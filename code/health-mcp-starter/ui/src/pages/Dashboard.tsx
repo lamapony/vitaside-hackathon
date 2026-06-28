@@ -46,14 +46,14 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
       {isNewUser && (
         <div className="onboarding-banner">
           <div>
-            <strong>Начните за 2 минуты</strong>
+            <strong>Get started in 2 minutes</strong>
             <p>
-              Мы нашли {pendingSuggestions} подсказок из ваших записей — подтвердите профиль и контекст,
-              чтобы рекомендации стали точнее.
+              We found {pendingSuggestions} suggestions from your notes — confirm your profile and context
+              so recommendations get sharper.
             </p>
           </div>
           <button type="button" className="primary" onClick={() => onNavigate("context")}>
-            Заполнить контекст <ArrowRight size={16} />
+            Fill in context <ArrowRight size={16} />
           </button>
         </div>
       )}
@@ -65,7 +65,7 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
           {secondary.length > 0 && (
             <div className="card">
               <div className="card-header">
-                <div className="card-title">Ещё наблюдения</div>
+                <div className="card-title">More observations</div>
                 <Lightbulb size={18} />
               </div>
               <div className="insight-grid compact">
@@ -77,14 +77,14 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
                 ))}
               </div>
               <button type="button" className="action-link" onClick={() => onNavigate("smart")}>
-                Вся аналитика <ArrowRight size={14} />
+                Full analytics <ArrowRight size={14} />
               </button>
             </div>
           )}
 
           <div className="card">
             <div className="card-header">
-              <div className="card-title">Ваш профиль</div>
+              <div className="card-title">Your profile</div>
               <User size={18} />
             </div>
             <div className="progress-row">
@@ -95,18 +95,18 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
             </div>
             <p className="meta profile-hint">
               {profile?.main_goal
-                ? `Цель: ${profile.main_goal}`
-                : "Добавьте цель и контекст — так паттерны станут полезнее для врача."}
+                ? `Focus: ${profile.main_goal}`
+                : "Add a goal and context — patterns become more useful for your doctor."}
             </p>
             <button type="button" className="secondary compact-btn" onClick={() => onNavigate("context")}>
-              {pendingSuggestions > 0 ? `Проверить ${pendingSuggestions} подсказок` : "Обновить контекст"}
+              {pendingSuggestions > 0 ? `Review ${pendingSuggestions} suggestions` : "Update context"}
             </button>
           </div>
 
           <div className="card subtle-card">
             <p className="meta">
-              <strong>VitaSide ≠ ChatGPT.</strong> Каждый вывод привязан к дате и фрагменту вашей заметки.
-              Облако — только по вашему согласию.
+              <strong>Grounded, not generated.</strong> Every insight links to a dated excerpt from your own notes.
+              Cloud is opt-in only.
             </p>
           </div>
         </div>

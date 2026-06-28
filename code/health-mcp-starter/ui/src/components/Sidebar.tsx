@@ -7,36 +7,43 @@ export type TabId =
   | "condition"
   | "doctor"
   | "datasources"
-  | "smart";
+  | "smart"
+  | "sidecar";
 
 type NavItem = { id: TabId; label: string; hint: string; icon: React.ReactNode };
 type NavGroup = { title: string; items: NavItem[] };
 
 const GROUPS: NavGroup[] = [
   {
-    title: "Обзор",
+    title: "Overview",
     items: [
-      { id: "dashboard", label: "Главная", hint: "Что важно сейчас", icon: <I.Home size={18} /> }
+      { id: "dashboard", label: "Home", hint: "What matters now", icon: <I.Home size={18} /> }
     ]
   },
   {
-    title: "Ваше здоровье",
+    title: "Your health",
     items: [
-      { id: "context", label: "Мой контекст", hint: "Профиль, лекарства", icon: <I.User size={18} /> },
-      { id: "timeline", label: "Хронология", hint: "День за днём", icon: <I.Clock size={18} /> },
-      { id: "condition", label: "Состояние", hint: "Мигрень, биполярка…", icon: <I.Activity size={18} /> }
+      { id: "context", label: "My context", hint: "Profile, meds, logs", icon: <I.User size={18} /> },
+      { id: "timeline", label: "Timeline", hint: "Day by day", icon: <I.Clock size={18} /> },
+      { id: "condition", label: "Condition", hint: "Migraine, sleep, mood", icon: <I.Activity size={18} /> }
     ]
   },
   {
-    title: "Анализ",
+    title: "Analysis",
     items: [
-      { id: "smart", label: "Умный обзор", hint: "Базовые линии", icon: <I.Brain size={18} /> },
-      { id: "datasources", label: "Источники", hint: "Omi и Apple", icon: <I.Database size={18} /> }
+      { id: "smart", label: "Smart view", hint: "Baselines & narrative", icon: <I.Brain size={18} /> },
+      { id: "datasources", label: "Data sources", hint: "Omi & Apple", icon: <I.Database size={18} /> }
     ]
   },
   {
-    title: "Визит",
-    items: [{ id: "doctor", label: "К врачу", hint: "Экспорт и вопросы", icon: <I.FileText size={18} /> }]
+    title: "Visit",
+    items: [{ id: "doctor", label: "Doctor handoff", hint: "Export & questions", icon: <I.FileText size={18} /> }]
+  },
+  {
+    title: "System",
+    items: [
+      { id: "sidecar", label: "Sidecar & audit", hint: "Manifest · scopes · audit", icon: <I.ShieldCheck size={18} /> }
+    ]
   }
 ];
 
@@ -55,7 +62,7 @@ export function Sidebar({ active, onChange, pendingSuggestions = 0, displayName 
         <div>
           <strong>VitaSide</strong>
           <div className="brand-subtitle">
-            {displayName ? `для ${displayName}` : "ваши паттерны — локально"}
+            {displayName ? `for ${displayName}` : "your patterns — locally"}
           </div>
         </div>
       </div>
@@ -86,7 +93,7 @@ export function Sidebar({ active, onChange, pendingSuggestions = 0, displayName 
       </nav>
 
       <div className="sidebar-footnote">
-        Данные на вашем Mac · аудит sidecar · без облака по умолчанию
+        Data stays on your Mac · sidecar audit · no cloud by default
       </div>
     </aside>
   );

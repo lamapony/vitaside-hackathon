@@ -1,6 +1,6 @@
 import { Loader2 } from "lucide-react";
 
-export function Loading({ label = "Загружаем локальные паттерны…" }: { label?: string }) {
+export function Loading({ label = "Loading local patterns…" }: { label?: string }) {
   return (
     <div className="loading">
       <Loader2 className="animate-spin" size={20} style={{ marginRight: 8 }} />
@@ -12,18 +12,29 @@ export function Loading({ label = "Загружаем локальные пат�
 export function ErrorBox({ message }: { message: string }) {
   return (
     <div className="error-box" role="alert">
-      <strong>Нужна проверка</strong>
+      <strong>Something needs attention</strong>
       <p>{message}</p>
     </div>
   );
 }
 
+const FRIENDLY_ENDPOINT: Record<string, string> = {
+  briefing: "summary",
+  timeline: "timeline",
+  sidecar: "sidecar status",
+  "condition-packs": "conditions",
+  "user-context": "your context",
+  questions: "visit questions",
+  "next-steps": "next steps",
+};
+
 export function PartialErrorBanner({ endpoints }: { endpoints: string[] }) {
   if (!endpoints.length) return null;
+  const labels = endpoints.map((e) => FRIENDLY_ENDPOINT[e] ?? e);
   return (
     <div className="error-box partial-error" role="status">
-      <strong>Часть данных недоступна</strong>
-      <p>{endpoints.join(", ")}</p>
+      <strong>Some data is unavailable</strong>
+      <p>{labels.join(", ")}</p>
     </div>
   );
 }

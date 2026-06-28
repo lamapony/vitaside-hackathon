@@ -47,11 +47,11 @@ def generate_doctor_view(
         f"<td>{_e(t.get('direction'))}</td></tr>"
         for t in (clinical.get("trends") or [])
     )
-    flag_rows = "".join(f"<li>{_e(f)}</li>" for f in clinical.get("flags_for_review") or [])
+    flag_rows = "".join(f"<li>{_e(f)}</li>" for f in clinical.get("observations_for_review") or clinical.get("flags_for_review") or [])
     q_rows = "".join(f"<li>{_e(q)}</li>" for q in clinical.get("visit_questions") or [])
 
     return f"""<!DOCTYPE html>
-<html lang="ru"><head><meta charset="utf-8"/>
+<html lang="en"><head><meta charset="utf-8"/>
 <title>VitaSide Doctor View — {today}</title>
 <style>
 body{{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 20px;color:#1a1a1a}}

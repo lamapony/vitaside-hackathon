@@ -1,0 +1,6 @@
+FOOTER_ID=vitaside-audit-footer
+HAS_SCOPE=scope-a
+HAS_CONFIDENCE=0.75
+HAS_ENTITY=vp-golden
+HAS_DISCLAIMER=Demo disclaimer
+HAS_PRINT_MEDIA=@media print

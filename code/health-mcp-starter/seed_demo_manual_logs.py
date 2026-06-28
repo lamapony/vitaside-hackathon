@@ -8,22 +8,22 @@ from user_context import load_context, save_context
 DEMO_MANUAL_LOGS = [
     {
         "type": "headache",
-        "text": "Головная боль 7/10, пульсирует с утра. Принял ибупрофен.",
+        "text": "Headache 7/10, pulsing since morning. Took ibuprofen.",
         "severity": 7,
     },
     {
         "type": "headache",
-        "text": "Мигрень после бессонной ночи, лёг в тёмную комнату.",
+        "text": "Migraine after a sleepless night, dark room and rest.",
         "severity": 8,
     },
     {
         "type": "note",
-        "text": "Вчера был дедлайн, сегодня голова снова ноет.",
+        "text": "Deadline yesterday — headache again today.",
         "severity": 5,
     },
     {
         "type": "medication",
-        "text": "Суматриптан 50mg — помогло через 40 минут.",
+        "text": "Sumatriptan 50mg — relief after 40 minutes.",
         "severity": 4,
     },
 ]

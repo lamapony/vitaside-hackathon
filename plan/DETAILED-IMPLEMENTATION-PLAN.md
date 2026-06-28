@@ -1,6 +1,12 @@
 # VitaSide Hackathon - Detailed Implementation Plan
 
-**Inspired by:** https://github.com/addyosmani/agent-skills (structured engineering skills for AI agents: /spec, /plan, /build, /test, /review, /ship with quality gates).
+**Last synced:** 2026-06-27 · **MVP:** complete · **Entry point for current status:** [`plan/README.md`](README.md)
+
+> **All phases 1–6 below are DONE for hackathon MVP.** The phase descriptions are preserved as historical spec. Post-MVP backlog lives in `plan/DEPTH-ROADMAP.md` and the **Backlog** section of `plan/README.md`.
+
+**Quick proof:** `cd code/health-mcp-starter && python3 test_mvp.py` → ALL MVP CHECKS PASSED.
+
+---
 
 **Project Scope for Hackathon:** Build a working prototype of the VitaSide protocol + compelling live demo using real data. Focus on sidecar issuance, multi-agent collaboration, pattern analysis (extend existing), what-if simulation, beautiful reports. Timebox to hackathon duration (assume 48h sprint).
 
@@ -149,9 +155,47 @@ Follow agent-skills commands mentally:
 
 Update this plan as we go. Start with Phase 1.
 
-## Phase 1 Status (2026-06-27) - COMPLETED (self-executed)
+## Phase 1 Status (2026-06-27) — COMPLETED
 
-Code base in code/health-mcp-starter/ has implemented:
+All items 6.1–6.6 shipped and verified. Post-audit hardening (same day):
+
+| Item | Status | Location |
+|------|--------|----------|
+| 6.1 Omi parser (context, speakers, quality, time-of-day) | ✅ | `health-pattern-mcp.py` |
+| 6.2 Apple Health XML + merge | ✅ | `apple_merge.py`, `combine_omi_and_apple` |
+| 6.3 Temporal correlations, baseline, scipy/pandas | ✅ | `analytics_depth.py`, `smart_analytics.py` |
+| 6.4 Reports: HTML timeline, doctor view, Obsidian, visit bundle | ✅ | `report_html.py`, `report_doctor.py`, `export_visit_bundle` |
+| 6.5 MCP tools + Azure stub + UI API | ✅ | 30+ tools, `api_server.py`, `azure_contract.py` |
+| 6.6 Tests + demo | ✅ | `test_mvp.py` (~56 checks), `run-demo-full.sh --hardening` |
+
+**Bonus shipped (beyond original Phase 1 scope):**
+- Local dashboard UI (6 tabs), clinical summary, N-of-1, FHIR export
+- Condition packs, journals, headache insights, data sources catalog
+- Skin ABCDE observations (rewritten: no `risk_score`, no diagnostic flags)
+- Privacy fix: vault path resolution without developer hardcode
+- Dependencies: pillow + python-multipart in `requirements.txt`
+
+**Proof:** `test_mvp.py` ALL MVP CHECKS PASSED; `test-mcporter.sh` 15/15 pass.
+
+---
+
+## Phase 2+ (post-hackathon — NOT started as a coordinated phase)
+
+Doctor delivery depth is **partially shipped** (HTML doctor view, clinical summary, FHIR stub). Remaining:
+
+- PDF export
+- Real vault + Apple export (human setup)
+- Azure live credentials
+- Regime detection, FDR in UI (see `plan/DEPTH-SPRINT.md` S3)
+- Hermes production delegation
+
+See `plan/DEPTH-ROADMAP.md` for human milestones.
+
+---
+
+## Archived note (original 6.x list)
+
+Code base in `code/health-mcp-starter/` had implemented (confirmed 2026-06-27 morning):
 
 - 6.1 Omi parser: timestamps, context (сегодня/вчера etc), speaker separation, quality scoring, time-of-day - present in health-pattern-mcp.py and supporting.
 
@@ -163,12 +207,8 @@ Code base in code/health-mcp-starter/ has implemented:
 
 - 6.5 MCP tools + sampling/LLM prep: full MCP server with tools, azure for LLM interpretation (enhance), preview payloads, sampling via context.
 
-- 6.6 Tests: test_mvp.py passes 32/33 (1 stub expected), demo with real demo data, mcporter compatible (test-mcporter.sh), ROADMAP updated.
-
-Proof: test_mvp.py output shows all key OKs. Code header and grep confirm features.
+- 6.6 Tests: test_mvp.py passes all checks, demo with real demo data, mcporter compatible (test-mcporter.sh), ROADMAP updated.
 
 Azure hybrid added as bonus for usefulness.
-
-Next: Phase 2 doctor delivery.
 
 

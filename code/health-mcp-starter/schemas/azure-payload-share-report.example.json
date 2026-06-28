@@ -1,0 +1,60 @@
+{
+  "contract_version": "1.0",
+  "generated_at": "2026-06-28T10:00:00+00:00",
+  "sidecar": {
+    "name": "azure-hybrid-sidecar",
+    "issuer": "local-user",
+    "version": "0.1"
+  },
+  "consent": {
+    "granted": true,
+    "operation": "share_report",
+    "locale": "en"
+  },
+  "data_minimization": {
+    "raw_transcripts": false,
+    "vault_paths": false,
+    "anonymized": true,
+    "max_excerpt_chars": 140,
+    "payload_fingerprint": "share123abc456def"
+  },
+  "local_summary": {
+    "days_analyzed": 42,
+    "files_scanned": 50,
+    "signal_counts": {
+      "sleep": 8,
+      "stress": 11,
+      "mood_low": 5
+    },
+    "temporal_correlations": [
+      {
+        "cause": "sleep",
+        "effect": "mood_low",
+        "lag": 2,
+        "probability": 0.55,
+        "lift_ratio": 1.8,
+        "confidence": 0.65,
+        "example_dates": ["2026-05-10", "2026-05-17"],
+        "sample_citation": {
+          "date": "2026-05-11",
+          "excerpt": "Woke up tired, low energy all day, skipped workout."
+        }
+      }
+    ],
+    "top_insights": [
+      {
+        "rank": 1,
+        "headline": "Poor sleep linked to low mood 2 days later",
+        "detail": "Observed in 5+ dated chains from personal history.",
+        "evidence_date": "2026-05-11",
+        "evidence_quote": "Woke up tired...",
+        "action": "Try consistent 7.5h sleep window and recheck mood in 2 weeks."
+      }
+    ]
+  },
+  "request": {
+    "operation": "share_report",
+    "locale": "en",
+    "prompt_hint": ""
+  }
+}

@@ -12,7 +12,7 @@ Shows **actionable briefing** — dated citations, not generic LLM advice.
 
 ## The "why not ChatGPT?" line (memorize — verify with `./scripts/vitaside preflight`)
 
-> "ChatGPT can tell you pain affects mood. VitaSide shows that **on March 31** you wrote *«Грустно и тяжело, день прошёл уныло»* and your **own 83 days** of notes show pain→low mood with **~2× lift** — with an audit log of every file read. That's not a chatbot guess."
+> "ChatGPT can tell you pain affects mood. VitaSide shows that **on March 31** you wrote *\"Sad and heavy day, everything felt gloomy\"* and your **own 83 days** of notes show pain→low mood with **~2× lift** — with an audit log of every file read. That's not a chatbot guess."
 
 **What-if line:** sleep stabilization → mood_low **−62%** (confidence **0.95** — from your good vs poor sleep nights).
 

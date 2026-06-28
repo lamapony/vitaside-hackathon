@@ -77,9 +77,13 @@ allowed_scopes:
   - path: "$VAULT/050 Daily Omi"
     permissions: ["read"]
 tools:
+  - health_check
   - analyze_lifestyle_patterns
   - simulate_whatif
   - generate_doctor_report
+  - build_visit_packet
+  - generate_visit_questions
+  - collaborative_insight
   - find_correlation
   - list_data_sources$EXTRA_TOOLS
 quality_gates:

@@ -17,8 +17,26 @@ DEFAULT_MANIFEST = _SCRIPT_DIR / "sidecars" / "sleep-stress-sidecar" / "manifest
 AUDIT_LOG = Path(os.getenv("VITASIDE_AUDIT_LOG", _SCRIPT_DIR / "audit.log"))
 
 
+def _coerce_utc(dt: datetime.datetime) -> datetime.datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=datetime.timezone.utc)
+    return dt.astimezone(datetime.timezone.utc)
+
+
+def parse_issued_at(value: Any) -> datetime.datetime:
+    if isinstance(value, datetime.datetime):
+        return _coerce_utc(value)
+    if not value:
+        return datetime.datetime.now(datetime.timezone.utc)
+    try:
+        return _coerce_utc(datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00")))
+    except ValueError:
+        return datetime.datetime.now(datetime.timezone.utc)
+
+
 def _parse_ttl(ttl: str, issued_at: Optional[datetime.datetime] = None) -> datetime.datetime:
     issued_at = issued_at or datetime.datetime.now(datetime.timezone.utc)
+    issued_at = _coerce_utc(issued_at)
     if ttl.endswith("d"):
         days = int(ttl[:-1])
         return issued_at + datetime.timedelta(days=days)
@@ -26,7 +44,7 @@ def _parse_ttl(ttl: str, issued_at: Optional[datetime.datetime] = None) -> datet
         hours = int(ttl[:-1])
         return issued_at + datetime.timedelta(hours=hours)
     try:
-        return datetime.datetime.fromisoformat(ttl.replace("Z", "+00:00"))
+        return _coerce_utc(datetime.datetime.fromisoformat(ttl.replace("Z", "+00:00")))
     except ValueError:
         return issued_at + datetime.timedelta(days=30)
 
@@ -48,10 +66,11 @@ def load_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
         }
     raw = path.read_text(encoding="utf-8")
     data = yaml.safe_load(raw) if yaml else json.loads(raw)
-    data.setdefault("issued_at", datetime.datetime.now(datetime.timezone.utc).isoformat())
+    issued = parse_issued_at(data.get("issued_at"))
+    data["issued_at"] = issued.isoformat()
     data["_manifest_path"] = str(path)
     data["_loaded"] = True
-    data["_expires_at"] = _parse_ttl(str(data.get("ttl", "30d"))).isoformat()
+    data["_expires_at"] = _parse_ttl(str(data.get("ttl", "30d")), issued).isoformat()
     return data
 
 
@@ -84,6 +103,15 @@ def check_scope(manifest: Dict[str, Any], target: Path) -> bool:
         return True
     target = target.resolve()
     return any(target == r or r in target.parents for r in roots)
+
+
+def assert_tool_allowed(manifest: Dict[str, Any], tool: str) -> None:
+    allowed = manifest.get("tools") or []
+    if not allowed:
+        return
+    if tool not in allowed:
+        audit("tool_denied", {"tool": tool, "manifest": manifest.get("name")})
+        raise RuntimeError(f"Tool '{tool}' is not allowed by sidecar manifest '{manifest.get('name')}'")
 
 
 def audit(event: str, detail: Dict[str, Any]) -> None:
@@ -128,8 +156,14 @@ def revoke_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
     return data
 
 
-def assert_sidecar_active(manifest: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def assert_sidecar_active(
+    manifest: Optional[Dict[str, Any]] = None,
+    *,
+    tool: Optional[str] = None,
+) -> Dict[str, Any]:
     m = manifest or load_manifest()
+    if tool:
+        assert_tool_allowed(m, tool)
     if is_revoked(m):
         audit("sidecar_revoked_access", {"manifest": m.get("name")})
         raise RuntimeError(f"Sidecar '{m.get('name')}' was revoked at {m.get('revoked_at')}")

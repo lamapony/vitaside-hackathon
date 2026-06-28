@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from omi_parser_quality import HIGH_CONFIDENCE_INSIGHT_THRESHOLD, LOW_QUALITY_THRESHOLD
+
 SIGNAL_LABELS = {
     "sleep": "sleep issues",
     "stress": "stress",
@@ -40,15 +42,26 @@ def build_actionable_briefing(
         lag = c.get("lag", 1)
         cite = (c.get("citations") or [{}])[0]
         ex_dates = c.get("example_dates", [])
+        pc = cite.get("parser_confidence")
+        low_q = bool(cite.get("low_quality_excerpt")) or (
+            pc is not None and float(pc) < LOW_QUALITY_THRESHOLD
+        )
+        detail = (
+            f"In {len(ex_dates)}+ dated note chains, {_label(effect)} followed {_label(cause)} "
+            f"with {c.get('probability', 0)*100:.0f}% day-after rate (lift {c.get('lift_ratio')}×, confidence {c.get('confidence')})."
+        )
+        if low_q:
+            detail += " ⚠ Low parser confidence on cited excerpt — treat as exploratory."
         insights.append({
             "rank": len(insights) + 1,
             "headline": f"{_label(cause).title()} → {_label(effect)} about {lag} day(s) later",
-            "detail": (
-                f"In {len(ex_dates)}+ dated note chains, {_label(effect)} followed {_label(cause)} "
-                f"with {c.get('probability', 0)*100:.0f}% day-after rate (lift {c.get('lift_ratio')}×, confidence {c.get('confidence')})."
-            ),
+            "detail": detail,
             "evidence_date": cite.get("date", ex_dates[0] if ex_dates else ""),
             "evidence_quote": (cite.get("excerpt") or "")[:140],
+            "evidence_parser_confidence": pc,
+            "low_quality_evidence": low_q,
+            "high_confidence_insight": not low_q
+            and float(c.get("confidence") or 0) >= HIGH_CONFIDENCE_INSIGHT_THRESHOLD,
             "action": f"Track whether reducing {_label(cause)} changes {_label(effect)} next week.",
             "why_not_llm": f"Grounded in {files} files / {days} days — LLM has no access to your Omi vault.",
         })

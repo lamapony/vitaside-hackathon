@@ -1079,8 +1079,7 @@ h1, h2, h3 { letter-spacing: 0; }
   padding: var(--space-8) var(--space-8) var(--space-7);
   border-radius: var(--radius-xl);
   border: 1px solid #c9dfd8;
-  background:
-    linear-gradient(135deg, #f0f8f5 0%, #ffffff 45%, #f7faf9 100%);
+  background: #eef7f3;
   box-shadow: var(--shadow-card);
 }
 
@@ -1294,3 +1293,177 @@ h1, h2, h3 { letter-spacing: 0; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Demo status strip — honest live/sample indicator for the hackathon pitch */
+.demo-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 14px;
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  border: 1px solid var(--line-soft);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.demo-strip.live {
+  border-color: #c9dfd8;
+  background: #eef7f3;
+}
+
+.demo-strip.sample {
+  border-color: #ead9c8;
+  background: #fdf8f2;
+}
+
+.demo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ink-3);
+}
+
+.demo-strip.live .demo-dot {
+  background: var(--success);
+}
+
+.demo-strip.sample .demo-dot {
+  background: var(--warning);
+}
+
+.demo-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo-btn {
+  min-height: 30px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.demo-btn:hover {
+  background: var(--surface-2);
+}
+
+/* Print / Save as PDF — clean doctor handoff packet (Roadmap Phase 3) */
+.print-only { display: none; }
+
+@media print {
+  @page { margin: 18mm 16mm; }
+  html, body {
+    background: #fff !important;
+    color: #111 !important;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  .sidebar,
+  .demo-strip,
+  footer,
+  .screen-only { display: none !important; }
+  .app-layout { display: block !important; }
+  .main-column {
+    padding: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+  .print-only { display: block !important; }
+
+  .print-packet { color: #111; font-family: var(--font-sans); }
+  .print-packet .pp-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 2px solid #1f5247;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .print-packet .pp-brand {
+    background: #1f5247;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 14pt;
+  }
+  .print-packet .pp-title { flex: 1; }
+  .print-packet .pp-title h1 { margin: 0; font-size: 18pt; color: #111; }
+  .print-packet .pp-sub { margin: 2px 0 0; font-size: 10pt; color: #444; }
+  .print-packet .pp-conf { text-align: right; font-size: 9pt; color: #444; }
+  .print-packet .pp-conf-label { display: block; text-transform: uppercase; letter-spacing: 0.08em; }
+  .print-packet .pp-conf-value { font-weight: 600; color: #1f5247; }
+
+  .print-packet .pp-section { margin-bottom: 16px; }
+  .print-packet .pp-avoid-break { break-inside: avoid; }
+  .print-packet .pp-h2 {
+    font-size: 13pt;
+    color: #1f5247;
+    margin: 0 0 8px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 3px;
+  }
+  .print-packet .pp-lede { margin: 0 0 6px; font-size: 11pt; }
+  .print-packet .pp-meta { margin: 0; font-size: 9pt; color: #555; }
+  .print-packet .pp-muted { color: #666; }
+  .print-packet .pp-small { font-size: 9.5pt; color: #333; }
+
+  .print-packet .pp-trends {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 10pt;
+  }
+  .print-packet .pp-trends th,
+  .print-packet .pp-trends td {
+    border: 1px solid #ddd;
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .print-packet .pp-trends th { background: #f2f6f4; color: #1f5247; }
+  .print-packet .pp-center { text-align: center; }
+
+  .print-packet .pp-questions { margin: 0; padding-left: 18px; }
+  .print-packet .pp-q { margin-bottom: 8px; break-inside: avoid; }
+  .print-packet .pp-q-text { font-weight: 500; }
+  .print-packet .pp-q-evidence {
+    font-size: 9.5pt;
+    color: #444;
+    font-family: var(--font-serif);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .print-packet .pp-footer {
+    margin-top: 18px;
+    border-top: 1px solid #ccc;
+    padding-top: 8px;
+    font-size: 9pt;
+    color: #444;
+  }
+  .print-packet .pp-footer p { margin: 0 0 3px; }
+}
+
+/* Signal trend chart (Roadmap Phase 3 — rich inline charts) */
+.signal-trend-chart svg { display: block; }
+.signal-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--ink-2);
+  align-items: center;
+}
+.signal-trend-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.signal-trend-legend i { width: 14px; height: 3px; border-radius: 2px; }
+.signal-trend-range { margin-left: auto; color: var(--ink-3); }

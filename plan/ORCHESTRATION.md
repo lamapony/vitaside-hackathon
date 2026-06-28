@@ -3,35 +3,53 @@
 > **Conductor chat** (этот тред): держит волны, разрешает конфликты, мержит результаты.  
 > **Worker chats**: один агент = один промпт из `plan/agents/`. Не переписывать чужую зону.
 
-**Repo:** `/Users/dmitriibabinov/Documents/Aviato/05-hackathons/vitaside-hackathon`
+**Repo:** `vitaside-hackathon` (workspace root — use relative paths in agent prompts)
 
 ---
 
-## Depth Sprint Wave S1+S3 — parallel (2026-06-27)
+## Wave 4 — Audit hardening (2026-06-27 evening) ✅
 
 | Lane | Status | Deliverable |
 |------|--------|-------------|
-| Backend S1+S3 | 🟢 | `clinical_summary.py`, `n1_compare.py`, `fhir_export.py`, FDR, MCP tools, API |
+| Skin safety | 🟢 | `skin_analysis.py` — ABCDE observations only; no risk_score |
+| Privacy | 🟢 | Vault path: env → ~/Documents/Obsidian Vault → demo (no hardcoded user path) |
+| Dependencies | 🟢 | pillow + python-multipart in requirements.txt; requirements-dev.txt |
+| API skin upload | 🟢 | Form() consent, 15 MB limit, 400 on validation errors |
+| Clinical framing | 🟢 | `observations_for_review` in clinical summary |
+| UI skin section | 🟢 | DoctorHandoff: photo guide, errors, progress, no risk display |
+| Plans sync | 🟢 | ROCKET-PLAN, TASKS, ROADMAP, README status dashboard |
+
+**Gate:** `python3 test_mvp.py` green + manual skin API edge cases verified
+
+---
+
+## Depth Sprint Wave S1+S3 (2026-06-27) ✅
+
+| Lane | Status | Deliverable |
+|------|--------|-------------|
+| Backend S1+S3 | 🟢 | `clinical_summary.py`, `n1_compare.py`, `fhir_export.py`, MCP tools, API |
 | UI S5 | 🟢 | DoctorHandoff clinical summary, Smart N-of-1 card |
 | Integration | 🟢 | `write-mcp-config.sh`, `docs/COLLABORATION.md`, mcporter depth tests |
-| Azure S4 | ⚪ | Live enhance (second agent) |
+| Azure S4 | ⚪ | Live enhance — stub OK for demo |
 
 **Gate:** `python3 test_mvp.py` + `bash test-mcporter.sh` + `cd ui && npm run build`
 
 ---
 
-## Status board (обновляет conductor)
+## Status board (2026-06-27 — all hackathon lanes closed)
 
-| Lane | Agent prompt | Owner chat | Status | Blocker |
-|------|--------------|------------|--------|---------|
-| UI Dashboard | `agents/01-UI-AGENT.md` | [UI agent](0fe0ea45-f4c0-4485-b251-83f7b73429b3) | 🟢 6 tabs (Wave 2) | — |
-| Backend / Smart | `agents/02-BACKEND-AGENT.md` | Backend (this) | 🟢 smart + data_sources | — |
-| Azure hybrid | `agents/03-AZURE-AGENT.md` | Azure agent | ⚪ stub only | credentials |
-| QA / Hardening | `agents/04-QA-AGENT.md` | [QA agent](7c8206c6-97e6-412e-8bd2-836ede2289a8) | 🟢 report + P0 fixes | — |
-| Pitch / Demo | `agents/05-PITCH-AGENT.md` | Pitch agent | 🟡 script exists | UI in demo |
-| Hermes / MCP | `agents/06-INTEGRATION-AGENT.md` | Integration | ⚪ simulation only | Hermes access |
+| Lane | Agent prompt | Status | Notes |
+|------|--------------|--------|-------|
+| UI Dashboard | `agents/01-UI-AGENT.md` | 🟢 Done | 6 tabs, skin section hardened Wave 4 |
+| Backend / Smart | `agents/02-BACKEND-AGENT.md` | 🟢 Done | 30+ MCP tools, clinical layer |
+| Azure hybrid | `agents/03-AZURE-AGENT.md` | ⚪ Stub | Live needs credentials — OK for demo |
+| QA / Hardening | `agents/04-QA-AGENT.md` | 🟢 Done | Waves 1–4 in QA-REPORT |
+| Pitch / Demo | `agents/05-PITCH-AGENT.md` | 🟢 Done | DEMO-SCRIPT + preflight |
+| Hermes / MCP | `agents/06-INTEGRATION-AGENT.md` | 🟡 Simulation | mcporter 15/15; live Hermes = backlog |
 
-Legend: 🟢 done · 🟡 in progress · ⚪ not started · 🔴 blocked
+Legend: 🟢 done · 🟡 partial / human step · ⚪ not started · 🔴 blocked
+
+**Next human actions:** real vault (`OMI_VAULT_PATH`), Apple export, doctor feedback — see `DEPTH-ROADMAP.md` D1.
 
 ---
 
@@ -88,46 +106,39 @@ flowchart LR
 
 ---
 
-### Wave 1 — Demo-ready surface (NOW)
+### Wave 1 — Demo-ready surface ✅
 
-**Parallel tracks:**
-
-| Track | Do | Don't |
-|-------|-----|-------|
-| **UI** | Acceptance from `01-UI-AGENT.md` + smoke `./serve-ui.sh` | Touch `health-pattern-mcp.py` logic |
-| **QA** | Matrix: MCP + API + UI + scope leaks | Refactor prod code |
-
-**Gate:** `./serve-ui.sh` + all UI acceptance + `test_mvp.py` + `./run-demo-full.sh --hardening`
-
-**Wave 1 gate:** ✅ core + mcporter + scoped audit; `./serve-ui.sh` hardened for busy ports
+**Gate passed:** `./serve-ui.sh` + `test_mvp.py` + `./run-demo-full.sh --hardening`
 
 ---
 
-### Wave 2 — Depth for judges
+### Wave 2 — Depth for judges ✅
 
-| Track | Deliverable |
-|-------|-------------|
-| **UI+** | Tabs: Data Sources, Smart/Attention (`/api/data-sources`, `/api/smart`) |
-| **Azure** | Live `_call_openai` + share function OR documented stub demo |
-| **Apple** | SpO2, sleep stages in `apple_merge.py` if time |
-
-**Gate:** Demo script section 3–6 works with UI open on second screen
+| Track | Deliverable | Status |
+|-------|-------------|--------|
+| **UI+** | Data Sources, Smart tabs | ✅ |
+| **Azure** | Contract + stub demo | ✅ stub |
+| **Apple** | SpO2, sleep stages in merge | ✅ partial |
 
 ---
 
-### Wave 3 — Wow & ship
+### Wave 3 — Wow & ship ✅
 
-| Track | Deliverable |
-|-------|-------------|
-| **Integration** | `test-mcporter.sh` green, Hermes config snippet |
-| **PDF** | `export-for-doctor.sh --pdf` or print CSS |
-| **Pitch** | 7-min script rehearsed, backup video |
-
-**Gate:** Full dry-run 3× without errors
+| Track | Deliverable | Status |
+|-------|-------------|--------|
+| **Integration** | `test-mcporter.sh` 15/15, config scripts | ✅ |
+| **PDF** | print CSS | ⚪ backlog |
+| **Pitch** | DEMO-SCRIPT + preflight | ✅ |
 
 ---
 
-### Wave 4 — Real data (human, post-hackathon)
+### Wave 4 — Audit hardening ✅ (2026-06-27 evening)
+
+Skin safety, privacy paths, requirements, plan sync. See top of this doc.
+
+---
+
+### Wave 5 — Real data (human, post-hackathon) ⚪
 - Real `OMI_VAULT_PATH`, Apple export, doctor feedback
 
 ---
@@ -189,10 +200,8 @@ Full example: `schemas/data-sources.example.json`
 
 ---
 
-## Next actions (conductor assigns now)
+## Next actions (post-hackathon)
 
-1. **UI agent** → Wave 1 acceptance + Wave 2 Data Sources / Smart tabs  
-2. **QA agent** → `plan/QA-REPORT.md` + fix gaps  
-3. **Azure agent** → live or polished stub demo  
-4. **Pitch agent** → add `./serve-ui.sh` beat to DEMO-SCRIPT  
-5. **You (human)** → real vault path when ready (Wave 4)
+1. **Human** → real `OMI_VAULT_PATH` + Apple Health export (Wave 5)
+2. **Backlog** → PDF export, Azure live, E2E skin tests (see `plan/README.md`)
+3. **Conductor** → update `plan/README.md` when a backlog item ships

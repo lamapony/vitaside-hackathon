@@ -1,0 +1,25 @@
+{
+  "metrics": [
+    {"day": "2026-06-01", "metric_key": "resting_hr", "value": 62.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-02", "metric_key": "resting_hr", "value": 63.5, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-03", "metric_key": "resting_hr", "value": 61.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-04", "metric_key": "resting_hr", "value": 64.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-05", "metric_key": "resting_hr", "value": 65.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-06", "metric_key": "resting_hr", "value": 66.5, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-07", "metric_key": "resting_hr", "value": 68.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-08", "metric_key": "resting_hr", "value": 67.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-09", "metric_key": "resting_hr", "value": 69.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-10", "metric_key": "resting_hr", "value": 70.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-11", "metric_key": "resting_hr", "value": 71.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-12", "metric_key": "resting_hr", "value": 72.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-13", "metric_key": "resting_hr", "value": 73.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-14", "metric_key": "resting_hr", "value": 74.0, "unit": "bpm", "source": "fixture"},
+    {"day": "2026-06-01", "metric_key": "sleep_hours", "value": 7.2, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-02", "metric_key": "sleep_hours", "value": 6.8, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-03", "metric_key": "sleep_hours", "value": 7.0, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-04", "metric_key": "sleep_hours", "value": 6.5, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-05", "metric_key": "sleep_hours", "value": 6.9, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-06", "metric_key": "sleep_hours", "value": 6.4, "unit": "h", "source": "fixture"},
+    {"day": "2026-06-07", "metric_key": "sleep_hours", "value": 6.2, "unit": "h", "source": "fixture"}
+  ]
+}

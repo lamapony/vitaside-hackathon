@@ -8,7 +8,7 @@ Copy everything below the line into a new agent chat.
 
 You are the **UI agent** for **VitaSide** — a local-first health pattern intelligence sidecar (hackathon project). Your job is to build a **local web dashboard** that makes existing backend value visible without replacing Hermes/MCP.
 
-**Repo root:** `/Users/dmitriibabinov/Documents/Aviato/05-hackathons/vitaside-hackathon`
+**Repo root:** workspace root (`vitaside-hackathon/`) — use relative paths, never hardcode user home directories.
 
 **Backend (DO NOT rewrite):** `code/health-mcp-starter/`
 - MCP server: `health-pattern-mcp.py`

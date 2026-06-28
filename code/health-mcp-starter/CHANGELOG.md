@@ -5,6 +5,7 @@ All notable changes to the VitaSide MCP implementation (`health-mcp-starter`).
 ## [0.2.0-productization] — 2026-06-28
 
 ### Added
+- VIT-42 (prep): `scripts/verify_founder_vault.py`, `init_founder_context.sh`, `docs/templates/user_context.example.json`, `docs/impl/founder-vault-wiring.md`
 - VIT-45: `Makefile` `make ci`, monorepo workflow `.github/workflows/vitaside-ci.yml`, pytest-cov gate on `sidecar_protocol` (≥80%).
 - `install.sh` + `scripts/vitaside_paths.sh` — repo-relative `VITASIDE_MANIFEST` / `OMI_VAULT_PATH` resolver
 - `docs/RELEASE.md` — cold-start, verify, and MCP wiring

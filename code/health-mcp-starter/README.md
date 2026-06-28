@@ -1,22 +1,22 @@
 # Health Patterns MCP Server — v2 (Apple Health)
 
-Подключается к Hermes как MCP сервер. Анализирует Omi записи + Apple Health данные.
+MCP server for Hermes (or Cursor). Analyzes Omi notes + Apple Health data locally.
 
-## Быстрый старт (тест без Hermes)
+## Quick start (without Hermes)
 
 ```bash
-# Посмотреть доступные инструменты (8 инструментов)
+# List available tools
 npx mcporter list --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py"
 
-# Omi анализ
+# Omi analysis
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" analyze_lifestyle_patterns --timeout 30000
 
-# Apple Health (демо-данные если export.xml не найден)
+# Apple Health (demo data if export.xml is missing)
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" load_apple_health_data --timeout 30000
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" analyze_apple_patterns --timeout 30000
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" combine_omi_and_apple --timeout 30000
 
-# Полный отчёт
+# Full doctor report
 npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" generate_doctor_report --timeout 30000
 ```
 
@@ -27,124 +27,99 @@ npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.
 ./serve-ui.sh       # uses .venv/bin/python when present
 ```
 
-Откроется локальный dashboard на `http://127.0.0.1:5173`: top insights с цитатами,
-ручной профиль/контекст, timeline, condition packs (`migraine` / `bipolar`) и
-doctor handoff. API работает локально на `http://127.0.0.1:8787`; сырые Omi/Apple
-данные не отправляются в сеть.
+Opens the local dashboard at `http://127.0.0.1:5173`: top insights with citations,
+manual profile/context, timeline, condition packs (`migraine` / `bipolar`), and
+doctor handoff. API runs locally on `http://127.0.0.1:8787`; raw Omi/Apple data
+is never sent to the network.
 
-Ручной контекст сохраняется локально в `local-data/user_context.json`:
-- профиль и текущая цель;
-- состояния/диагнозы, которые пользователь хочет отслеживать;
-- лекарства и расписание;
-- быстрые записи вроде “голова 7/10, принял ибупрофен”.
+Manual context is stored locally in `local-data/user_context.json`:
+- profile and current focus goal;
+- conditions you want to track;
+- medications and schedule;
+- quick logs like “headache 7/10, took ibuprofen”.
 
-**Автозаполнение:** вкладка *My context* предлагает meds/conditions/goals из Omi-записей.
-Кнопка *Apply to empty fields* заполняет пустые поля; ручные правки помечаются `manual` и не перезаписываются.
+**Auto-fill:** the *My context* tab suggests meds/conditions/goals from Omi notes.
+*Apply to empty fields* fills blanks only; manual edits are tagged `manual` and are not overwritten.
 
-**Command center:** главная вкладка показывает *Where to go next* — конкретные шаги на неделю.
+**Home:** the main tab shows *Focus this week* — concrete next steps.
 
-При `Generate bundle` создаётся дополнительный файл `out/vitaside-user-context-*.md`
-для визита к врачу.
+`Generate bundle` also writes `out/vitaside-user-context-*.md` for your visit.
 
-## Подключение к Hermes (постоянно)
+## Hermes (persistent)
 
-Добавь в `~/.hermes/config.yaml`:
+Add to `~/.hermes/config.yaml`:
 
 ```yaml
 mcp_servers:
   health_patterns:
     command: /opt/anaconda3/bin/python3
     args:
-      - /Users/dmitriibabinov/Documents/Aviato/04-research/health-mcp-starter/health-pattern-mcp.py
+      - /path/to/health-pattern-mcp.py
     env:
-      OMI_VAULT_PATH: "/Users/dmitriibabinov/Documents/Obsidian Vault"
+      OMI_VAULT_PATH: "/Users/YOUR_USERNAME/Documents/Obsidian Vault"
     timeout: 180
 ```
 
-Затем:
-- `hermes` (или перезапуск gateway)
-- Инструменты появятся как `mcp_health_patterns_*`
+Then restart Hermes — tools appear as `mcp_health_patterns_*`.
 
-## Инструменты (8 total)
+## Tools
 
-### Omi Tools (original)
-| Инструмент | Описание |
+### Omi
+| Tool | Description |
 |---|---|
-| `analyze_lifestyle_patterns` | Анализ Omi записей: сигналы (sleep, stress, mood, symptoms, food) |
-| `find_correlation` | Простая корреляция совпадений по датам |
-| `generate_doctor_report` | Генерация отчёта для врача (Omi + Apple Health) |
-| `list_data_sources` | Показывает что видит сервер |
+| `analyze_lifestyle_patterns` | Parse Omi notes: sleep, stress, mood, symptoms |
+| `find_correlation` | Date-aligned signal co-occurrence |
+| `generate_doctor_report` | Doctor handoff report (Omi + Apple) |
+| `list_data_sources` | What the server can see |
+| `get_clinical_summary` | One-page clinical summary |
+| `run_n1_compare` | N-of-1 exposure vs control days |
+| `export_fhir_bundle` | PGHD FHIR bundle (binned) |
 
-### Apple Health Tools (NEW в v2)
-| Инструмент | Описание |
+### Apple Health
+| Tool | Description |
 |---|---|
-| `load_apple_health_data` | Загружает export.xml или демо-данные |
-| `analyze_apple_patterns` | Корреляции HRV, sleep, steps, SpO2, trends |
-| `combine_omi_and_apple` | Объединение Omi + Apple по датам |
+| `load_apple_health_data` | Load export.xml or demo data |
+| `analyze_apple_patterns` | HRV, sleep, steps, SpO2 trends |
+| `combine_omi_and_apple` | Merge Omi + Apple by date |
 
-## Apple Health Export
+## Apple Health export
 
-### Как получить export.xml
-1. iPhone: Настройки > Приватность > Здоровье > Экспорт данных здоровья
-2. Скопируй папку `apple_health_export` в одно из:
+1. iPhone: Settings → Privacy → Health → Export All Health Data
+2. Copy `apple_health_export` to one of:
    - `~/Documents/Obsidian Vault/Apple Health/`
    - `~/Downloads/apple_health_export/`
    - `~/Desktop/apple_health_export/`
    - `~/Documents/apple_health_export/`
 
-### Что парсится из export.xml
+### Parsed from export.xml
 
-**Количественные метрики (HKQuantityTypeIdentifier*):**
-- heart_rate, resting_heart_rate, walking_heart_rate
-- hrv_sdnn (вариабельность пульса)
-- steps, distance, flights_climbed
-- exercise_minutes, active_energy, basal_energy
-- blood_pressure (systolic/diastolic)
-- spo2 (сатурация)
-- weight, bmi, body_fat, lean_body_mass
-- respiratory_rate
-- sleep (3 стадии: core/deep/REM)
-- audio exposure (environmental/headphone)
+**Quantitative (HKQuantityTypeIdentifier*):** heart rate, HRV, steps, sleep stages, SpO2, and more.
 
-**Симптомы (HKCategoryTypeIdentifier*): 40+ типов**
-- headache, fatigue, back_pain, dizziness, nausea
-- mood_changes, sleep_changes, appetite_changes
-- chest_pain, shortness_of_breath, palpitations
-- и другие
+**Symptoms (HKCategoryTypeIdentifier*):** 40+ types including headache, fatigue, mood changes.
 
-**Activity Summaries:** кольца активности (Move/Exercise/Stand)
+**Activity summaries:** Move / Exercise / Stand rings.
 
-**Clinical Records:** аллергии, прививки, результаты (metadata)
+**Clinical records:** allergies, immunizations (metadata).
 
-Парсинг безопасен: только scoped paths, без сети.
+Parsing is scoped-path only — no network.
 
-### Если export.xml нет
-По умолчанию `use_demo_if_missing=True` — возвращает репрезентативные демо-данные на 30 дней с реалистичными распределениями (HR 72±8, sleep 7±1.2ч, steps 3000-15000).
+### No export.xml?
 
-## Дорожная карта
+Demo mode returns ~30 days of representative sample data (HR ~72±8, sleep ~7±1.2h, steps 3k–15k).
 
-Текущий статус: **Phase 1 — Apple Health завершён**
+## Roadmap
 
-См. ROADMAP.md для полной карты.
+See `ROADMAP.md` for the full map.
 
-## Архитектура
+## Architecture
 
 ```
 health-pattern-mcp.py
-├── Omi Parser (_parse_omi_file)
-│   └── Сигналы: sleep, stress, mood, symptom, food
-├── Apple Health Parser (_parse_apple_health_xml)
-│   ├── Records (HKQuantityTypeIdentifier*)
-│   ├── Activity Summaries
-│   ├── Clinical Records
-│   └── Demo data generator
-├── MCP Tools (8)
-│   ├── analyze_lifestyle_patterns, find_correlation
-│   ├── load_apple_health_data, analyze_apple_patterns
-│   ├── combine_omi_and_apple
-│   ├── generate_doctor_report
-│   └── list_data_sources
-└── Безопасность: _is_safe_path (scoped paths only)
+├── Omi parser → signals: sleep, stress, mood, symptom, …
+├── Apple Health parser → export.xml + demo generator
+├── Scientific layer → correlations, baselines, N-of-1, FHIR
+├── MCP tools + sidecar manifest (scoped read, audit, TTL)
+└── api_server.py → local dashboard UI
 ```
 
-**Не медицинский инструмент.** Только паттерны для врача.
+**Not a medical device.** Patterns for self-awareness and visit prep only.

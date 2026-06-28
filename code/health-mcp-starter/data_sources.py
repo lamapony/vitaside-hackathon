@@ -107,6 +107,52 @@ SOURCE_CATALOG: List[Dict[str, Any]] = [
         "fallback": "demo_daily synthetic series when export missing",
     },
     {
+        "id": "google_health",
+        "type": "local_export",
+        "label": "Google Health / Fit / Health Connect exports",
+        "label_ru": "Экспорт Google Health / Fit / Health Connect",
+        "description": "Wearable and phone metrics from Google ecosystem. Local exports via Google Takeout (Fit data) or Health Connect export apps (JSON/CSV). Merged by date with Omi notes.",
+        "description_ru": "Метрики с носимых устройств и телефона из экосистемы Google. Локальные экспорты через Google Takeout (Fit) или приложения экспорта Health Connect (JSON/CSV). Мерж с Omi по дате.",
+        "env_vars": [],
+        "discovery": {
+            "search_paths": [
+                "~/Downloads/google_health_export/",
+                "~/Documents/google_health_export/",
+                "~/Desktop/google_health_export/",
+                "{vault}/Google Health/"
+            ],
+            "files": ["*.json", "*.csv", "fit-*.zip", "export.*"]
+        },
+        "provides": [
+            "steps",
+            "heart_rate_avg",
+            "sleep_hours",
+            "activity_minutes",
+            "wearable bands (Google Fit data)",
+            "omi↔google alignment insights"
+        ],
+        "consumed_by": [
+            "combine_omi_and_google (future)",
+            "smart_analysis (wearable_bands)",
+            "generate_doctor_report",
+            "get_actionable_briefing (merge insights)"
+        ],
+        "setup_steps": [
+            "Android: Google Takeout → Fit data (JSON/CSV)",
+            "Or install 'Health Connect' export app to local files",
+            "Unzip/place files in ~/Downloads/google_health_export/",
+            "Note: Google does not provide single XML like Apple; multiple files common. Use third-party for structured export."
+        ],
+        "setup_steps_ru": [
+            "Android: Google Takeout → данные Fit (JSON/CSV)",
+            "Или приложение экспорта Health Connect в локальные файлы",
+            "Распаковать в ~/Downloads/google_health_export/",
+            "Примечание: Google не даёт один XML как Apple; обычно несколько файлов. Используйте сторонние приложения для структурированного экспорта."
+        ],
+        "privacy": "local_only",
+        "fallback": "demo_daily synthetic series when export missing"
+    },
+    {
         "id": "sidecar_manifest",
         "type": "protocol",
         "label": "Sidecar manifest (scopes + TTL)",
@@ -349,8 +395,8 @@ ANALYSIS_PIPELINE: List[Dict[str, Any]] = [
 
 TOOL_RESOURCE_MAP: Dict[str, List[str]] = {
     "analyze_lifestyle_patterns": ["omi_vault", "sidecar_manifest", "apple_health", "audit_log"],
-    "smart_analysis": ["omi_vault", "apple_health", "sidecar_manifest"],
-    "get_actionable_briefing": ["omi_vault", "apple_health", "sidecar_manifest"],
+    "smart_analysis": ["omi_vault", "apple_health", "google_health", "sidecar_manifest"],
+    "get_actionable_briefing": ["omi_vault", "apple_health", "google_health", "sidecar_manifest"],
     "simulate_whatif": ["omi_vault", "sidecar_manifest"],
     "combine_omi_and_apple": ["omi_vault", "apple_health", "sidecar_manifest"],
     "collaborative_insight": ["omi_vault", "host_context", "apple_health", "sidecar_manifest"],
@@ -388,12 +434,35 @@ def apple_search_paths(vault: Path) -> List[Path]:
     ]
 
 
+
+def google_search_paths(vault: Path) -> List[Path]:
+    """Search paths for Google Health / Fit local exports (research: Takeout, Health Connect, third party)."""
+    return [
+        vault / "Google Health",
+        Path.home() / "Downloads" / "google_health_export",
+        Path.home() / "Documents" / "google_health_export",
+        Path.home() / "Desktop" / "google_health_export",
+        Path.home() / "Downloads" / "Fit",
+        Path.home() / "Documents" / "Fit",
+    ]
+
+
 def find_apple_export(vault: Path) -> Optional[Path]:
     for base in apple_search_paths(vault):
         xml = base / "export.xml"
         if xml.exists():
             return xml
     return None
+
+def find_google_export(vault: Path) -> Optional[Path]:
+    """Find Google health export. Returns first matching dir with data files (research note: no standard single file)."""
+    for base in google_search_paths(vault):
+        for ext in ["*.json", "*.csv", "export.*", "fit*.zip"]:
+            matches = list(base.glob(ext))
+            if matches:
+                return base  # return the dir for now
+    return None
+
 
 
 def _count_omi_files(vault: Path) -> Dict[str, Any]:
@@ -457,6 +526,19 @@ def _source_status(source_id: str, vault: Path, manifest: Dict[str, Any], apple_
             row["resolved_path"] = None
             row["stats"] = {"mode": "demo_daily", "note": "Synthetic Apple series — export Health data for real metrics"}
             row["candidates_checked"] = [str(p / "export.xml") for p in apple_search_paths(vault)]
+    elif source_id == "google_health":
+        # Research note: Google exports are fragmented (Takeout JSON/CSV, Health Connect apps). No single canonical file.
+        # For now treat as demo_fallback; real support would require parser for multiple formats.
+        gxml = extra.get("google_xml")
+        if gxml:
+            row["status"] = "connected"
+            row["resolved_path"] = str(gxml)
+            row["stats"] = {"mode": "real", "note": "Google health data dir found (research prototype)"}
+        else:
+            row["status"] = "demo_fallback"
+            row["resolved_path"] = None
+            row["stats"] = {"mode": "demo_daily", "note": "Synthetic Google series — export via Takeout/Health Connect for real metrics. See docs for research."}
+            row["candidates_checked"] = ["~/Downloads/google_health_export/*", "~/Documents/google_health_export/*"]
     elif source_id == "sidecar_manifest":
         row["status"] = "active" if manifest.get("_loaded") else "default"
         row["resolved_path"] = manifest.get("_manifest_path")
@@ -507,6 +589,7 @@ def build_sources_snapshot(
 ) -> Dict[str, Any]:
     """Full catalog + live status for MCP / API / UI."""
     apple_xml = find_apple_export(vault)
+    google_xml = find_google_export(vault)
     sources = [
         _source_status(
             s["id"],
@@ -519,6 +602,7 @@ def build_sources_snapshot(
             host_events=host_events,
             packs_dir=Path(__file__).parent / "condition_packs",
             scoped_parseable=scoped_parseable if s["id"] == "omi_vault" else None,
+            google_xml=google_xml,
         )
         for s in SOURCE_CATALOG
     ]
@@ -548,7 +632,7 @@ def build_sources_snapshot(
             "connected_sources": connected,
             "needs_setup": missing,
             "primary_source": primary_source,
-            "optional_enrichment": ["apple_health", "host_context", "condition_packs"],
+            "optional_enrichment": ["apple_health", "google_health", "host_context", "condition_packs"],
         },
         "sources": sources,
         "catalog": SOURCE_CATALOG,

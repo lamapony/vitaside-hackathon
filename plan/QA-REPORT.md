@@ -1,5 +1,36 @@
 # QA Report — VitaSide Hackathon
 
+## QA Wave 4 — Audit hardening (2026-06-27 evening)
+
+**Scope:** P0/P1 fixes from external audit (skin safety, privacy paths, dependencies, plan drift).  
+**Working directory:** `code/health-mcp-starter`
+
+### Wave 4 changes verified
+
+| Area | Change | Result |
+|------|--------|--------|
+| Skin analysis | Removed `risk_score`, `preliminary_flags`, diagnostic language; ABCDE observations only | ✅ Manual + API contract |
+| Vault privacy | No developer path in `health-pattern-mcp.py` defaults | ✅ grep clean in runtime code |
+| Dependencies | `pillow`, `python-multipart` in requirements.txt; `requirements-dev.txt` added | ✅ PIL import works |
+| Skin API | `Form()` for consent; 15 MB limit; 400 on validation errors | ✅ TestClient edge cases |
+| Clinical summary | `observations_for_review` (was `flags_for_review`) | ✅ test_mvp clinical checks pass |
+| UI skin | Photo guide, errors, progress; no risk score display | ✅ tsc clean |
+| Plans | ROCKET-PLAN, TASKS, ROADMAP, README synced to code | ✅ |
+
+### Wave 4 verification
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Acceptance suite | `python3 test_mvp.py` | **PASS** — ALL MVP CHECKS PASSED |
+| Skin API (manual) | TestClient: valid / no-consent / oversized / bad-image | **PASS** — 200/400 as expected |
+| Forbidden skin keys | `analyze_skin_photo` output | **PASS** — no risk_score, preliminary_flags |
+
+**Wave 4 matrix:** **3 / 3 PASS**
+
+**Open from audit (not in Wave 4):** E2E skin tests in test_mvp.py; Azure share live; git history path scrub in `inputs/`.
+
+---
+
 ## QA Wave 3 Hardening 2026-06-27
 
 **Scope:** post-hardening verification only; documents Wave 3 agent deliverables and re-runs from repo root.  

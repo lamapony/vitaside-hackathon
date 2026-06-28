@@ -28,7 +28,7 @@ def _sig_ru(sig: str) -> str:
 def build_local_narrative(
     briefing: Dict[str, Any],
     smart: Optional[Dict[str, Any]] = None,
-    locale: str = "ru",
+    locale: str = "en",
 ) -> Dict[str, Any]:
     """
     Produce a structured narrative from local data only.

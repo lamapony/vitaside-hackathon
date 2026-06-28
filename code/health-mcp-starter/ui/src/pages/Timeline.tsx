@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, Filter, Quote } from "lucide-react";
+import { CalendarDays, Filter, Quote, TrendingUp } from "lucide-react";
 import { TimelineEntry } from "../api";
+import { SignalTrendChart } from "../components/SignalTrendChart";
 
 const SIGNAL_LABELS: Record<string, string> = {
-  sleep: "Сон",
-  stress: "Стресс",
-  mood_low: "Низкое настроение",
-  mood_good: "Хорошее настроение",
-  exercise: "Активность",
-  caffeine_alcohol: "Кофеин / алкоголь",
-  symptom_pain: "Боль / симптом",
-  social: "Социальное"
+  sleep: "Sleep",
+  stress: "Stress",
+  mood_low: "Low mood",
+  mood_good: "Good mood",
+  exercise: "Activity",
+  caffeine_alcohol: "Caffeine / alcohol",
+  symptom_pain: "Pain / symptom",
+  social: "Social"
 };
 
 type Props = {
@@ -38,10 +39,10 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
     <section className="fade-in">
       <header className="page-header">
         <div>
-          <p className="eyebrow">День за днём</p>
-          <h1>Хронология</h1>
+          <p className="eyebrow">Day by day</p>
+          <h1>Timeline</h1>
           <p className="lede">
-            Сигналы из ваших заметок — с датой и фрагментом текста. Фильтруйте, чтобы увидеть закономерности.
+            Signals from your notes — with date and text excerpt. Filter to spot patterns.
           </p>
         </div>
       </header>
@@ -61,6 +62,20 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
         </div>
       </div>
 
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <p className="eyebrow">Signal trend</p>
+            <div className="card-title">Weekly frequency over time</div>
+          </div>
+          <TrendingUp size={18} />
+        </div>
+        <SignalTrendChart entries={entries} activeSignal={activeSignal} />
+        <div className="meta" style={{ marginTop: 6 }}>
+          Share of days per week with each signal — derived from your timeline entries.
+        </div>
+      </div>
+
       <div className="card timeline-filter-card">
         <div className="card-header">
           <div>
@@ -75,7 +90,7 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
             className={activeSignal === "all" ? "pill active" : "pill"}
             onClick={() => setActiveSignal("all")}
           >
-            Все
+            All
           </button>
           {signals.map((sig) => (
             <button
@@ -99,7 +114,7 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
             </div>
             <CalendarDays size={18} />
           </div>
-          {filtered.length === 0 && <div className="meta">Нет записей для этого фильтра.</div>}
+          {filtered.length === 0 && <div className="meta">No entries for this filter.</div>}
           {filtered.length > 0 && (
             <div className="calendar-heatmap" aria-label="Timeline heatmap">
               <div className="calendar-weekday">M</div>
@@ -155,16 +170,22 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
                 ))}
               </div>
               {selected.sleep_quality && selected.sleep_quality !== "unknown" && (
-                <div className="meta">Сон: {selected.sleep_quality}</div>
+                <div className="meta">Sleep: {selected.sleep_quality}</div>
+              )}
+              {selected.low_quality_excerpt && (
+                <div className="meta warn">Low parser confidence — excerpt may be noisy (PP-05).</div>
+              )}
+              {selected.parser_confidence != null && (
+                <div className="meta">Parser confidence: {(selected.parser_confidence * 100).toFixed(0)}%</div>
               )}
               {selected.snippet ? (
                 <blockquote className="evidence">{selected.snippet}</blockquote>
               ) : (
-                <div className="meta">Нет цитаты для этого дня.</div>
+                <div className="meta">No citation for this day.</div>
               )}
             </>
           ) : (
-            <div className="meta">Выберите день на календаре.</div>
+            <div className="meta">Pick a day on the calendar.</div>
           )}
         </aside>
       </div>
@@ -176,13 +197,13 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
             <div className="card-title">Dated observations</div>
           </div>
         </div>
-        {filtered.length === 0 && <div className="meta">Нет записей для этого фильтра.</div>}
+        {filtered.length === 0 && <div className="meta">No entries for this filter.</div>}
         {filtered.map((entry, idx) => (
           <div key={idx} className="timeline-item">
             <div className="timeline-item-head">
               <strong>{entry.date}</strong>
               {entry.sleep_quality && entry.sleep_quality !== "unknown" && (
-                <span className="meta">Сон: {entry.sleep_quality}</span>
+                <span className="meta">Sleep: {entry.sleep_quality}</span>
               )}
             </div>
             <div className="signal-stack">

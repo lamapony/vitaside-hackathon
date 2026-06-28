@@ -1,6 +1,7 @@
 # VitaSide Hackathon Project
 
 **Status: MVP 1.0 complete** — see [`docs/MVP-1.0.md`](docs/MVP-1.0.md)  
+**Plan status (synced with code):** [`plan/README.md`](plan/README.md)  
 **Depth roadmap:** [`plan/DEPTH-ROADMAP.md`](plan/DEPTH-ROADMAP.md)
 
 ## Quick Start
@@ -45,8 +46,10 @@ MCP config template: `code/health-mcp-starter/mcp-config.example.json`
 | Doc | Purpose |
 |---|---|
 | `docs/MVP-1.0.md` | What's shipped |
+| `plan/README.md` | **Current status dashboard + honest backlog** |
 | `plan/DEPTH-ROADMAP.md` | Growth in depth (D1–D5) |
 | `docs/SPEC.md` | Protocol spec |
+| `docs/MCP-SIDECAR-TECHNICAL-SURVEY.md` | **VIT-3** — Technical methods survey: MCP, local stores, pattern detection, privacy contracts, Azure hybrid trade-offs |
 | `pitch/DEMO-SCRIPT.md` | Live demo script |
 
 ## New commands
@@ -68,8 +71,9 @@ MCP config template: `code/health-mcp-starter/mcp-config.example.json`
 | `export_visit_bundle` | HTML + Obsidian + questions |
 | `generate_doctor_report(format="obsidian")` | Obsidian visit prep note |
 
-**Version:** MVP 1.0 + Product Sprints P1–P4
-## Frontend (recreated via OpenDesign)
+**Version:** MVP 1.0 + Product Sprints P1–P5 (audit hardening)
+
+## Frontend (OpenDesign dashboard)
 
 The local dashboard UI (Vite + React) has been fully recreated with OpenDesign principles:
 - Design tokens (colors, spacing, radius, typography)
@@ -87,15 +91,18 @@ The UI talks to `api_server.py` (FastAPI wrapper over the MCP tools).
 
 Static HTML reports are still generated in `out/` for doctor handoff (can be opened directly or viewed via the "Doctor handoff" tab).
 
-## Skin photo preliminary check (new)
-Optional external-service boost for skin concerns (e.g. mole/melanoma awareness before doctor).
-- Local ABCDE-inspired analysis (asymmetry, border, color, size) using PIL.
-- Requires explicit `user_consent`.
-- Optional `use_external` for richer analysis (stub + hybrid like Azure).
-- Strong disclaimers everywhere.
-- UI upload in Doctor handoff tab.
-- Tool: `analyze_skin_photo(image_path, user_consent, use_external)`
-- Privacy: image stays local unless consented; only hash + features sent if external.
-Example:
-npx mcporter call --stdio python3 health-pattern-mcp.py analyze_skin_photo --image_path /tmp/photo.jpg --user_consent true
+## Skin photo ABCDE check (optional)
 
+Descriptive image features only — **not a diagnosis, not a risk score**.
+
+- Local ABCDE-inspired observations (asymmetry, border contrast, colour variety, size in px)
+- Requires explicit `user_consent`; photo guide included in response
+- Optional `use_external` stub (same pattern as Azure hybrid)
+- UI upload in Doctor Handoff tab with consent confirm + size limit (15 MB)
+- Tool: `analyze_skin_photo(image_path, user_consent, use_external)`
+- Privacy: image stays local unless external explicitly consented; audit logs fingerprint only
+
+```bash
+npx mcporter call --stdio "python3 health-pattern-mcp.py" analyze_skin_photo \
+  --image_path /tmp/photo.jpg --user_consent true
+```

@@ -1,700 +1,1263 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="VitaSide is a local, temporary AI sidecar protocol for personal health pattern intelligence."
-    >
-    <title>VitaSide - Local Health Intelligence Sidecars</title>
+      content="VitaSide — a quiet companion for self-observation between doctor visits. Working prototype, in active development."
+    />
+    <title>VitaSide — Pitch Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         color-scheme: light;
-        --ink: #132226;
-        --muted: #596b70;
-        --line: #d8e5e3;
-        --paper: #f7fbfa;
-        --white: #ffffff;
-        --teal: #0f7c7c;
-        --teal-dark: #0a5558;
-        --mint: #d7f1eb;
-        --coral: #d96d53;
-        --gold: #c4953f;
-        --graphite: #233236;
-        --shadow: 0 18px 54px rgba(21, 46, 49, 0.16);
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
+        /* warm, calm palette */
+        --paper: #f7f3ec;
+        --paper-2: #f1ebe0;
+        --paper-3: #e8e0d1;
+        --ink: #1f2326;
+        --ink-2: #343a3f;
+        --ink-soft: #4f575d;
+        --muted: #7a8389;
+        --muted-2: #9aa2a8;
+        --line: rgba(31, 35, 38, 0.14);
+        --line-soft: rgba(31, 35, 38, 0.07);
+        --clay: #c47b5e;       /* warm terracotta — gentle accent */
+        --clay-dark: #9c5a40;
+        --clay-soft: rgba(196, 123, 94, 0.10);
+        --sage: #6e8a78;       /* soft sage — calm/normal */
+        --sage-soft: rgba(110, 138, 120, 0.12);
+        --amber: #b4863a;
+        --shadow: 0 22px 60px rgba(31, 35, 38, 0.10);
+        --serif: "Fraunces", "Iowan Old Style", "Apple Garamond", Baskerville,
+          Georgia, "Times New Roman", serif;
+        --sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+          monospace;
+        font-family: var(--sans);
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
 
       body {
-        margin: 0;
-        color: var(--ink);
         background: var(--paper);
-      }
-
-      a {
-        color: inherit;
-      }
-
-      .shell {
-        width: min(1168px, calc(100% - 56px));
-        margin: 0 auto;
-      }
-
-      .hero {
-        min-height: 88vh;
-        display: grid;
-        align-items: stretch;
-        position: relative;
+        color: var(--ink);
         overflow: hidden;
-        background:
-          linear-gradient(90deg, rgba(247, 251, 250, 0.98) 0%, rgba(247, 251, 250, 0.9) 35%, rgba(247, 251, 250, 0.18) 68%),
-          linear-gradient(180deg, rgba(247, 251, 250, 0.05), rgba(247, 251, 250, 0.92)),
-          url("assets/vitaside-hero.png") center right / cover no-repeat;
+        -webkit-font-smoothing: antialiased;
       }
 
-      .nav {
+      a { color: inherit; }
+      ::selection { background: var(--clay); color: var(--paper); }
+
+      /* ===== Deck shell ===== */
+      .deck { position: fixed; inset: 0; }
+      .slides { position: absolute; inset: 0; }
+
+      .slide {
         position: absolute;
-        inset: 0 0 auto;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: clamp(64px, 9vh, 120px) clamp(44px, 8vw, 132px) clamp(96px, 13vh, 140px);
+        opacity: 0;
+        transform: translateY(14px);
+        transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+        pointer-events: none;
+        background-color: var(--paper);
+        background-image:
+          radial-gradient(90% 70% at 12% 6%, rgba(196, 123, 94, 0.13), transparent 55%),
+          radial-gradient(85% 70% at 95% 98%, rgba(110, 138, 120, 0.12), transparent 55%),
+          radial-gradient(rgba(31, 35, 38, 0.045) 1px, transparent 1.5px);
+        background-size: auto, auto, 30px 30px;
+        background-position: 0 0, 0 0, -1px -1px;
+      }
+
+      .slide.is-active {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
         z-index: 2;
-        padding: 22px 0;
       }
 
-      .nav-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
+      .slide.is-active .reveal { animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+      .slide.is-active .reveal:nth-child(2) { animation-delay: 0.08s; }
+      .slide.is-active .reveal:nth-child(3) { animation-delay: 0.16s; }
+      .slide.is-active .reveal:nth-child(4) { animation-delay: 0.24s; }
+      .slide.is-active .reveal:nth-child(5) { animation-delay: 0.32s; }
+      .slide.is-active .reveal:nth-child(6) { animation-delay: 0.40s; }
+
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(22px); }
+        to { opacity: 1; transform: none; }
       }
 
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 800;
-        font-size: 1.02rem;
-        min-height: 40px;
-        text-decoration: none;
+      /* registration crosshairs — quiet */
+      .slide::before, .slide::after {
+        content: "";
+        position: absolute;
+        width: 12px; height: 12px;
+        pointer-events: none;
+        opacity: 0.35;
       }
-
-      .brand-mark {
-        width: 28px;
-        height: 28px;
-        border-radius: 7px;
+      .slide::before {
+        top: 24px; left: 24px;
         background:
-          linear-gradient(135deg, var(--teal), #42a891 54%, var(--coral));
-        box-shadow: 0 8px 22px rgba(15, 124, 124, 0.25);
+          linear-gradient(var(--ink-soft), var(--ink-soft)) center / 1px 100% no-repeat,
+          linear-gradient(var(--ink-soft), var(--ink-soft)) center / 100% 1px no-repeat;
+      }
+      .slide::after {
+        bottom: 96px; right: 24px;
+        background:
+          linear-gradient(var(--ink-soft), var(--ink-soft)) center / 1px 100% no-repeat,
+          linear-gradient(var(--ink-soft), var(--ink-soft)) center / 100% 1px no-repeat;
       }
 
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #31494e;
-        font-size: 0.94rem;
-        font-weight: 650;
+      /* ===== Type ===== */
+      h1, h2, h3, p { margin: 0; }
+
+      .slide-num {
+        position: absolute;
+        top: 26px; right: 30px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        color: var(--muted-2);
+        z-index: 3;
       }
 
-      .nav-links a {
-        min-height: 40px;
+      .kicker {
         display: inline-flex;
         align-items: center;
-        border-radius: 8px;
-        padding: 0 12px;
-        text-decoration: none;
-      }
-
-      .nav-links a:hover {
-        background: rgba(255, 255, 255, 0.58);
-      }
-
-      .hero-content {
-        padding: 112px 0 86px;
-        align-self: center;
-        position: relative;
-        z-index: 1;
-      }
-
-      .eyebrow {
-        width: fit-content;
-        border: 1px solid rgba(15, 124, 124, 0.22);
-        background: rgba(255, 255, 255, 0.72);
-        color: var(--teal-dark);
-        border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 0.78rem;
-        font-weight: 780;
+        gap: 12px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.18em;
+        color: var(--clay);
       }
-
-      h1,
-      h2,
-      h3,
-      p {
-        margin: 0;
+      .kicker::before {
+        content: "";
+        width: 22px; height: 1px;
+        background: var(--clay);
       }
 
       h1 {
-        max-width: 760px;
-        margin-top: 22px;
-        font-size: clamp(3.15rem, 8vw, 6.45rem);
-        line-height: 0.89;
-        letter-spacing: 0;
-      }
-
-      .hero-copy {
-        max-width: 650px;
-        margin-top: 32px;
-        font-size: clamp(1.08rem, 1.8vw, 1.34rem);
-        line-height: 1.62;
-        color: #304348;
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-top: 38px;
-      }
-
-      .button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 52px;
-        border-radius: 8px;
-        padding: 0 22px;
-        gap: 8px;
-        font-weight: 760;
-        text-decoration: none;
-        border: 1px solid transparent;
-      }
-
-      .button.primary {
-        background: var(--teal);
-        color: var(--white);
-        box-shadow: 0 12px 28px rgba(15, 124, 124, 0.24);
-      }
-
-      .button.secondary {
-        background: rgba(255, 255, 255, 0.72);
-        border-color: rgba(19, 34, 38, 0.15);
-        color: var(--ink);
-      }
-
-      .button.secondary svg {
-        width: 17px;
-        height: 17px;
-      }
-
-      .signal-strip {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
-        margin-top: 58px;
-        max-width: 780px;
-      }
-
-      .signal {
-        min-height: 126px;
-        padding: 22px;
-        border: 1px solid rgba(19, 34, 38, 0.12);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.72);
-        box-shadow: 0 10px 34px rgba(28, 58, 62, 0.1);
-      }
-
-      .signal b {
-        display: block;
-        font-size: 1.45rem;
-        line-height: 1;
-      }
-
-      .signal span {
-        display: block;
-        margin-top: 13px;
-        color: var(--muted);
-        line-height: 1.48;
-        font-size: 0.93rem;
-      }
-
-      section {
-        padding: 104px 0;
-      }
-
-      .section-head {
-        display: grid;
-        grid-template-columns: minmax(0, 0.82fr) minmax(300px, 0.48fr);
-        gap: 56px;
-        align-items: end;
-        margin-bottom: 54px;
+        font-family: var(--serif);
+        font-size: clamp(3.8rem, 11vw, 8.4rem);
+        line-height: 0.9;
+        letter-spacing: -0.025em;
+        font-weight: 700;
+        font-variation-settings: "opsz" 144;
+        margin-top: 26px;
       }
 
       h2 {
-        font-size: clamp(2rem, 4vw, 3.25rem);
-        line-height: 1.02;
-        letter-spacing: 0;
+        font-family: var(--serif);
+        font-size: clamp(2.3rem, 5.4vw, 4.4rem);
+        line-height: 1.04;
+        letter-spacing: -0.02em;
+        font-weight: 600;
+        font-variation-settings: "opsz" 96;
+        max-width: 22ch;
+      }
+      h2 .v { color: var(--clay); font-style: italic; font-weight: 500; }
+      h2 .s { color: var(--sage); font-style: italic; font-weight: 500; }
+
+      .lead {
+        max-width: 58ch;
+        margin-top: 28px;
+        font-size: clamp(1.06rem, 1.5vw, 1.26rem);
+        line-height: 1.66;
+        color: var(--ink-soft);
+      }
+      .lead strong { color: var(--ink); font-weight: 600; }
+      .lead em { font-family: var(--serif); font-style: italic; color: var(--ink); }
+
+      /* ===== Soft ECG motif (calm, slow) ===== */
+      .ecg {
+        position: absolute;
+        left: 0; right: 0;
+        height: 80px;
+        overflow: hidden;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+      .ecg-top { top: 0; }
+      .ecg-bottom { bottom: 76px; }
+      .ecg svg {
+        position: absolute;
+        top: 50%; left: 0;
+        transform: translateY(-50%);
+        height: 100%;
+        width: 2400px;
+      }
+      .ecg-trace {
+        fill: none;
+        stroke: var(--clay);
+        stroke-width: 1.4;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        opacity: 0.65;
+        animation: ecg-scroll 14s linear infinite;
+      }
+      @keyframes ecg-scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-300px); }
       }
 
-      .section-head p,
-      .wide-copy {
-        color: var(--muted);
-        line-height: 1.72;
-        font-size: 1.02rem;
+      /* ===== Brand ===== */
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        letter-spacing: -0.01em;
+      }
+      .brand-mark {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        background: var(--ink);
+        position: relative;
+        display: grid; place-items: center;
+      }
+      .brand-mark::after {
+        content: "";
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 50% 60%, var(--clay) 0 4px, transparent 4.5px),
+          linear-gradient(90deg, transparent 47%, var(--paper) 47% 53%, transparent 53%);
       }
 
-      .grid-3 {
+      .stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 15px;
+        border: 1.5px solid var(--clay);
+        color: var(--clay);
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: 0.74rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        transform: rotate(-2.5deg);
+        background: rgba(255, 255, 255, 0.4);
+        opacity: 0.9;
+      }
+
+      .vitals {
+        margin-top: 48px;
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        max-width: 720px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.5);
       }
+      .vitals > div {
+        padding: 18px 22px;
+        border-right: 1px solid var(--line);
+        font-family: var(--mono);
+      }
+      .vitals > div:last-child { border-right: 0; }
+      .vitals .lbl {
+        font-size: 0.66rem;
+        letter-spacing: 0.14em;
+        color: var(--muted-2);
+        text-transform: uppercase;
+      }
+      .vitals .val {
+        margin-top: 6px;
+        font-size: 1.02rem;
+        font-weight: 500;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .vitals .val .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--sage);
+        box-shadow: 0 0 0 0 var(--sage);
+        animation: breathe 3.4s infinite;
+      }
+      @keyframes breathe {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(110,138,120,0.4); transform: scale(1); }
+        50% { box-shadow: 0 0 0 7px rgba(110,138,120,0); transform: scale(1.15); }
+      }
+
+      /* ===== Grid helpers ===== */
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 
       .card {
         border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--white);
-        padding: 30px;
-        box-shadow: 0 10px 30px rgba(24, 53, 56, 0.08);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.55);
+        padding: 26px;
+        position: relative;
       }
-
+      .card .tag {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--clay);
+        font-weight: 500;
+      }
+      .card.sage .tag { color: var(--sage); }
+      .card.amber .tag { color: var(--amber); }
       .card h3 {
-        font-size: 1.14rem;
-        line-height: 1.25;
+        font-family: var(--serif);
+        font-size: 1.32rem;
+        line-height: 1.2;
+        font-weight: 600;
+        margin-top: 12px;
+        letter-spacing: -0.01em;
       }
-
       .card p {
-        margin-top: 16px;
-        color: var(--muted);
-        line-height: 1.68;
+        margin-top: 12px;
+        color: var(--ink-soft);
+        line-height: 1.62;
+        font-size: 0.96rem;
       }
 
-      .demo {
-        background: #eef6f4;
-        border-top: 1px solid var(--line);
-        border-bottom: 1px solid var(--line);
-      }
-
-      .demo-layout {
+      /* ===== Steps ===== */
+      .step {
         display: grid;
-        grid-template-columns: 0.86fr 1.14fr;
-        gap: 40px;
+        grid-template-columns: 56px 1fr;
+        gap: 22px;
         align-items: start;
       }
+      .step-num {
+        width: 56px; height: 56px;
+        border: 1.5px solid var(--ink-soft);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 1.3rem;
+        background: var(--paper);
+        color: var(--ink-soft);
+      }
+      .step h3 {
+        font-family: var(--serif);
+        font-size: 1.28rem;
+        font-weight: 600;
+      }
+      .step p { margin-top: 8px; color: var(--ink-soft); line-height: 1.62; font-size: 0.95rem; }
 
-      .terminal {
+      /* ===== Record ===== */
+      .record {
+        border: 1px solid var(--line);
         border-radius: 8px;
-        background: #152326;
-        color: #d9f3ec;
+        background: #1f2326;
+        color: #e6e0d4;
         box-shadow: var(--shadow);
         overflow: hidden;
+        font-family: var(--mono);
       }
-
-      .terminal-top {
+      .record-bar {
         display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+        background: #262b30;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #9aa2a8;
+      }
+      .record-bar .rec {
+        display: inline-flex;
+        align-items: center;
         gap: 7px;
-        padding: 14px 16px;
-        background: #203236;
+        color: var(--clay);
+        font-weight: 500;
       }
-
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--coral);
+      .record-bar .rec::before {
+        content: "";
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--clay);
+        animation: breathe 2.6s infinite;
       }
-
-      .dot:nth-child(2) {
-        background: var(--gold);
-      }
-
-      .dot:nth-child(3) {
-        background: #49b08d;
-      }
-
-      pre {
+      .record pre {
         margin: 0;
-        padding: 30px;
+        padding: 24px 28px;
         white-space: pre-wrap;
-        font: 0.92rem/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+        line-height: 1.9;
       }
+      .record .c { color: #6f787e; }
+      .record .g { color: #8fbfa0; }
+      .record .y { color: #d4b072; }
+      .record .p { color: #b4a0e0; }
 
-      .timeline {
-        display: grid;
-        gap: 20px;
-      }
-
+      /* ===== Timeline ===== */
+      .timeline { display: grid; gap: 16px; margin-top: 6px; }
       .row {
         display: grid;
-        grid-template-columns: 90px 1fr;
-        gap: 22px;
+        grid-template-columns: 96px 1fr;
+        gap: 20px;
         align-items: center;
       }
-
       .row-label {
-        color: #40565b;
-        font-weight: 730;
-        font-size: 0.92rem;
+        font-family: var(--mono);
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
       }
-
       .bar-track {
-        height: 18px;
-        border-radius: 5px;
-        background: #dce8e5;
+        height: 13px;
+        border-radius: 4px;
+        background: var(--paper-3);
         overflow: hidden;
+        border: 1px solid var(--line-soft);
       }
-
       .bar {
         height: 100%;
-        border-radius: 5px;
-        background: var(--teal);
+        background: var(--ink-soft);
+        width: 0;
+        transition: width 1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s;
+      }
+      .bar.clay { background: var(--clay); }
+      .bar.sage { background: var(--sage); }
+      .bar.amber { background: var(--amber); }
+      .slide.is-active .bar { width: var(--w, 60%); }
+
+      .caption {
+        margin-top: 14px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        color: var(--muted-2);
+        text-transform: uppercase;
       }
 
-      .bar.coral {
-        background: var(--coral);
-      }
-
-      .bar.gold {
-        background: var(--gold);
+      .redact {
+        background: var(--ink-soft);
+        color: transparent;
+        border-radius: 2px;
+        padding: 0 4px;
+        margin: 0 1px;
+        user-select: none;
       }
 
       .quote {
-        margin-top: 30px;
-        padding-left: 22px;
-        border-left: 3px solid var(--teal);
-        color: #40565b;
-        line-height: 1.7;
+        margin-top: 22px;
+        padding: 18px 22px;
+        border-left: 3px solid var(--clay);
+        background: var(--clay-soft);
+        border-radius: 0 6px 6px 0;
+        color: var(--ink-2);
+        line-height: 1.65;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 1.04rem;
+      }
+      .quote .src {
+        display: block;
+        margin-top: 10px;
+        font-family: var(--mono);
+        font-style: normal;
+        font-size: 0.78rem;
+        color: var(--muted-2);
+        letter-spacing: 0.04em;
       }
 
-      .protocol {
+      /* ===== Collab ===== */
+      .collab {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 28px;
+        align-items: center;
+        margin-top: 32px;
       }
-
-      .step {
-        display: grid;
-        grid-template-columns: 42px 1fr;
-        gap: 20px;
-        align-items: start;
-      }
-
-      .step-number {
-        width: 42px;
-        height: 42px;
+      .agent {
+        border: 1px solid var(--line);
         border-radius: 8px;
-        display: grid;
-        place-items: center;
-        background: var(--mint);
-        color: var(--teal-dark);
-        font-weight: 850;
+        padding: 26px;
+        background: rgba(255,255,255,0.55);
+        text-align: center;
+      }
+      .agent .icon {
+        width: 50px; height: 50px;
+        border-radius: 50%;
+        margin: 0 auto 14px;
+        display: grid; place-items: center;
+        font-family: var(--serif);
+        font-size: 1.3rem;
+        font-weight: 600;
+      }
+      .agent.generalist .icon { background: var(--sage-soft); color: var(--sage); border: 1px solid var(--sage); }
+      .agent.specialist .icon { background: var(--clay-soft); color: var(--clay); border: 1px solid var(--clay); }
+      .agent h3 { font-family: var(--serif); font-size: 1.16rem; font-weight: 600; }
+      .agent p { margin-top: 8px; color: var(--ink-soft); font-size: 0.9rem; line-height: 1.55; }
+
+      .bridge {
+        text-align: center;
+        color: var(--muted-2);
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .bridge .arrow {
+        display: block;
+        font-size: 1.4rem;
+        color: var(--ink-soft);
+        margin: 6px 0;
       }
 
-      .footer {
-        padding: 50px 0;
-        color: #577078;
-        border-top: 1px solid var(--line);
+      .collab-out {
+        margin-top: 26px;
+        padding: 22px 26px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.6);
+        color: var(--ink-2);
+        line-height: 1.68;
+        font-size: 1rem;
+      }
+      .collab-out b { color: var(--clay); font-weight: 600; }
+      .collab-out .lbl {
+        display: block;
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted-2);
+        margin-bottom: 8px;
       }
 
-      .footer-inner {
+      .method {
+        margin-top: 22px;
+        padding: 16px 22px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        line-height: 1.65;
+      }
+      .method b { color: var(--ink); font-weight: 600; }
+
+      /* ===== Close ===== */
+      .pillars {
         display: flex;
-        justify-content: space-between;
         gap: 24px;
         flex-wrap: wrap;
+        margin-top: 42px;
+      }
+      .pillar {
+        font-family: var(--serif);
+        font-size: clamp(1.7rem, 3.6vw, 2.7rem);
+        font-weight: 500;
+        font-style: italic;
+        padding: 6px 0;
+        border-bottom: 1.5px solid var(--ink-soft);
+      }
+      .pillar.c { color: var(--clay); border-color: var(--clay); }
+      .pillar.s { color: var(--sage); border-color: var(--sage); }
+      .pillar.i { color: var(--ink); border-color: var(--ink-soft); }
+
+      .cta {
+        margin-top: 44px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        border-radius: 6px;
+        background: var(--ink);
+        color: var(--paper);
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.98rem;
+        box-shadow: var(--shadow);
+      }
+      .cta svg { width: 16px; height: 16px; }
+
+      .disclaimer {
+        margin-top: 22px;
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        color: var(--muted-2);
+        letter-spacing: 0.04em;
+        max-width: 60ch;
+        line-height: 1.6;
       }
 
-      @media (max-width: 820px) {
-        .shell {
-          width: min(100% - 32px, 680px);
-        }
+      /* ===== UI chrome ===== */
+      .progress {
+        position: fixed;
+        top: 0; left: 0;
+        height: 2px;
+        background: var(--clay);
+        z-index: 50;
+        transition: width 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+      }
 
-        .hero {
-          min-height: auto;
-          background:
-            linear-gradient(180deg, rgba(247, 251, 250, 0.96) 0%, rgba(247, 251, 250, 0.84) 48%, rgba(247, 251, 250, 0.98) 100%),
-            url("assets/vitaside-hero.png") center top / cover no-repeat;
-        }
+      .chrome {
+        position: fixed;
+        inset: auto 0 0 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px clamp(24px, 6vw, 56px);
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent, rgba(247, 243, 236, 0.9) 60%);
+      }
+      .chrome > * { pointer-events: auto; }
 
-        .nav {
-          position: static;
-        }
+      .nav-btns { display: flex; gap: 8px; }
+      .nav-btn {
+        width: 42px; height: 42px;
+        display: grid; place-items: center;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.7);
+        color: var(--ink);
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+      }
+      .nav-btn:hover { background: var(--ink); color: var(--paper); }
+      .nav-btn:active { transform: scale(0.94); }
+      .nav-btn svg { width: 18px; height: 18px; }
 
-        .nav-inner {
-          align-items: flex-start;
-        }
+      .dots { display: flex; gap: 7px; align-items: center; }
+      .dot-nav {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--line);
+        cursor: pointer;
+        transition: width 0.25s, background 0.25s;
+      }
+      .dot-nav.is-active {
+        width: 24px;
+        border-radius: 999px;
+        background: var(--clay);
+      }
 
-        .nav-links {
-          display: none;
-        }
+      .counter {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+      }
 
-        .hero-content {
-          padding: 58px 0 68px;
-        }
+      /* ===== Presenter notes ===== */
+      .notes {
+        position: fixed;
+        inset: auto 0 0 0;
+        z-index: 60;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+        background: rgba(31, 35, 38, 0.97);
+        border-top: 1px solid var(--line);
+        padding: 24px clamp(28px, 7vw, 80px) 90px;
+        color: #e6e0d4;
+      }
+      .notes.open { transform: none; }
+      .notes-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .notes-head .lbl {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--clay);
+      }
+      .notes-head .esc {
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: #9aa2a8;
+      }
+      .notes-body {
+        font-family: var(--serif);
+        font-size: 1.08rem;
+        line-height: 1.72;
+        max-width: 90ch;
+        color: #d6d0c4;
+      }
+      .key {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px; height: 22px;
+        padding: 0 7px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 4px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: #e6e0d4;
+      }
 
-        h1 {
-          font-size: clamp(3rem, 16vw, 5rem);
-        }
+      /* ===== Overview ===== */
+      .overview {
+        position: fixed;
+        inset: 0;
+        z-index: 70;
+        background: rgba(247, 243, 236, 0.97);
+        backdrop-filter: blur(8px);
+        padding: 60px clamp(28px, 6vw, 80px);
+        overflow: auto;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s;
+      }
+      .overview.open { opacity: 1; pointer-events: auto; }
+      .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .ov-card {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.6);
+        padding: 22px;
+        cursor: pointer;
+        transition: border-color 0.2s, transform 0.15s, background 0.2s;
+      }
+      .ov-card:hover { border-color: var(--clay); transform: translateY(-2px); background: #fff; }
+      .ov-card .n {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: var(--clay);
+        letter-spacing: 0.12em;
+      }
+      .ov-card .t {
+        margin-top: 10px;
+        font-family: var(--serif);
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.25;
+      }
 
-        .signal-strip,
-        .grid-3,
-        .protocol,
-        .demo-layout,
-        .section-head {
-          grid-template-columns: 1fr;
+      /* ===== Large screen / projector ===== */
+      @media (min-width: 1600px) {
+        h1 { font-size: clamp(4.5rem, 9vw, 11rem); }
+        h2 { font-size: clamp(3rem, 5vw, 6rem); max-width: 24ch; }
+        .lead { font-size: clamp(1.2rem, 1.4vw, 1.6rem); max-width: 64ch; }
+        .slide {
+          padding: clamp(80px, 9vh, 140px) clamp(120px, 10vw, 200px) clamp(110px, 14vh, 160px);
         }
+        .card { padding: 34px; }
+        .card h3 { font-size: 1.6rem; }
+        .card p { font-size: 1.08rem; }
+        .vitals { max-width: 880px; }
+        .vitals > div { padding: 24px 28px; }
+        .vitals .val { font-size: 1.2rem; }
+        .vitals .lbl { font-size: 0.78rem; }
+        .step-num { width: 70px; height: 70px; font-size: 1.6rem; }
+        .step h3 { font-size: 1.55rem; }
+        .step p { font-size: 1.08rem; }
+        .record pre { font-size: 1.02rem; line-height: 2.1; padding: 32px 36px; }
+        .row { grid-template-columns: 120px 1fr; gap: 26px; }
+        .bar-track { height: 18px; }
+        .row-label { font-size: 0.96rem; }
+        .quote { font-size: 1.2rem; padding: 22px 26px; }
+        .collab { gap: 40px; }
+        .agent { padding: 34px; }
+        .agent h3 { font-size: 1.4rem; }
+        .agent p { font-size: 1.02rem; }
+        .collab-out { font-size: 1.15rem; padding: 28px 32px; }
+        .method { font-size: 0.98rem; padding: 22px 28px; }
+        .pillar { font-size: clamp(2.2rem, 4vw, 3.4rem); }
+        .cta { padding: 18px 30px; font-size: 1.1rem; }
+        .kicker { font-size: 0.86rem; }
+        .slide-num { font-size: 0.86rem; }
+        .ecg { height: 100px; }
+        .nav-btn { width: 50px; height: 50px; }
+        .nav-btn svg { width: 22px; height: 22px; }
+        .counter { font-size: 0.92rem; }
+        .dot-nav { width: 9px; height: 9px; }
+        .dot-nav.is-active { width: 30px; }
+      }
 
-        .signal-strip {
-          margin-top: 42px;
+      @media (min-width: 2200px) {
+        .slide {
+          padding: clamp(100px, 9vh, 170px) clamp(180px, 12vw, 320px) clamp(130px, 14vh, 190px);
         }
+        h1 { font-size: 12rem; }
+        h2 { font-size: 7rem; }
+        .lead { font-size: 1.8rem; }
+        .card { padding: 44px; }
+        .card h3 { font-size: 2rem; }
+        .card p { font-size: 1.25rem; }
+      }
 
-        section {
-          padding: 72px 0;
-        }
-
-        .row {
-          grid-template-columns: 76px 1fr;
-        }
+      @media (max-width: 860px) {
+        .grid-2, .grid-3, .grid-4, .collab { grid-template-columns: 1fr; gap: 16px; }
+        .collab { grid-template-columns: 1fr; }
+        .bridge { transform: rotate(90deg); }
+        .vitals { grid-template-columns: 1fr; }
+        .vitals > div { border-right: 0; border-bottom: 1px solid var(--line); }
+        .vitals > div:last-child { border-bottom: 0; }
+        .slide { padding: 70px 26px 110px; }
+        h2 { max-width: none; }
       }
     </style>
   </head>
   <body>
-    <main>
-      <header class="hero">
-        <nav class="nav" aria-label="Primary navigation">
-          <div class="shell nav-inner">
-            <a class="brand" href="#top" aria-label="VitaSide home">
-              <span class="brand-mark" aria-hidden="true"></span>
-              <span>VitaSide</span>
-            </a>
-            <div class="nav-links">
-              <a href="#why">Why</a>
-              <a href="#demo">Demo</a>
-              <a href="#protocol">Protocol</a>
-              <a href="#build">Build</a>
-            </div>
-          </div>
-        </nav>
+    <div class="deck">
+      <div class="progress" id="progress"></div>
+      <div class="slides" id="slides">
 
-        <div class="shell hero-content" id="top">
-          <div class="eyebrow">Local-first health pattern intelligence</div>
-          <h1>VitaSide</h1>
-          <p class="hero-copy">
-            A temporary local AI sidecar that turns Omi notes, Apple Health signals, and
-            journals into explainable lifestyle patterns, what-if simulations, and
-            doctor-ready reports.
+        <!-- 1 · COVER -->
+        <section class="slide" data-notes="VitaSide — a quiet companion for self-observation between doctor visits. Working prototype, in active development. Speak gently: it helps you notice your own patterns and bring more to the appointment.">
+          <div class="slide-num">01 / 08</div>
+          <div class="ecg ecg-top">
+            <svg viewBox="0 0 2400 80" preserveAspectRatio="none">
+              <path class="ecg-trace" d="M0,40 H180 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H360 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H540 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H720 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H900 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1080 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1260 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1440 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1620 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1800 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1980 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2160 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2400"/>
+            </svg>
+          </div>
+          <div class="reveal brand">
+            <span class="brand-mark"></span>
+            <span>VitaSide</span>
+          </div>
+          <div class="reveal" style="margin-top:30px">
+            <span class="stamp">Prototype · in development</span>
+          </div>
+          <h1 class="reveal">VitaSide</h1>
+          <p class="lead reveal">
+            A <em>temporary, local companion</em> that lives inside your personal agent.
+            It listens to the patterns in your own data — Omi notes, Apple Health,
+            journals — and helps you arrive at doctor visits with <strong>clearer
+            observations</strong> instead of vague feelings.
           </p>
-          <div class="actions">
-            <a class="button primary" href="#demo">See the demo flow</a>
-            <a class="button secondary" href="https://github.com/lamapony/vitaside-hackathon">
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M8 .7a7.3 7.3 0 0 0-2.3 14.2c.36.07.5-.16.5-.35v-1.25c-2 .44-2.42-.86-2.42-.86-.33-.82-.8-1.04-.8-1.04-.65-.45.05-.44.05-.44.72.05 1.1.74 1.1.74.64 1.1 1.68.78 2.1.6.06-.47.25-.78.46-.96-1.6-.18-3.28-.8-3.28-3.56 0-.79.28-1.43.74-1.94-.08-.18-.32-.92.07-1.91 0 0 .6-.2 1.98.74A6.87 6.87 0 0 1 8 4.27c.61 0 1.22.08 1.79.24 1.37-.93 1.98-.74 1.98-.74.39.99.15 1.73.07 1.91.46.51.74 1.15.74 1.94 0 2.77-1.68 3.37-3.29 3.55.26.22.49.66.49 1.33v2.05c0 .2.13.42.5.35A7.3 7.3 0 0 0 8 .7Z"
-                />
-              </svg>
-              Open the repo
+          <div class="reveal vitals">
+            <div>
+              <div class="lbl">Storage</div>
+              <div class="val"><span class="dot"></span>Local only</div>
+            </div>
+            <div>
+              <div class="lbl">Access</div>
+              <div class="val"><span class="dot"></span>Scoped · read-only</div>
+            </div>
+            <div>
+              <div class="lbl">Lifetime</div>
+              <div class="val"><span class="dot"></span>Yours to revoke</div>
+            </div>
+          </div>
+          <div class="ecg ecg-bottom">
+            <svg viewBox="0 0 2400 80" preserveAspectRatio="none">
+              <path class="ecg-trace" d="M0,40 H180 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H360 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H540 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H720 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H900 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1080 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1260 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1440 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1620 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1800 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1980 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2160 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2400"/>
+            </svg>
+          </div>
+        </section>
+
+        <!-- 2 · THE GAP -->
+        <section class="slide" data-notes="The emotional core. You live with your body 24/7; your doctor sees it for fifteen minutes. Between visits, the small signals stay with you and rarely reach the appointment in a usable form. This is said with empathy, not as a fault of doctors.">
+          <div class="slide-num">02 / 08</div>
+          <div class="reveal kicker">What gets lost</div>
+          <h2 class="reveal">You live with your body <span class="v">24/7</span>. Your doctor sees it for fifteen minutes.</h2>
+          <p class="lead reveal">
+            Between visits, the story of how you actually felt — the rough nights, the
+            stressful weeks, the quietly good days — stays with you. It rarely reaches
+            the appointment in a form either of you can use.
+          </p>
+          <div class="reveal" style="margin-top:42px">
+            <div class="grid-3">
+              <div class="card">
+                <div class="tag">The appointment</div>
+                <h3>A few minutes</h3>
+                <p>Of memory-driven symptoms, shared under pressure, in a room you barely know.</p>
+              </div>
+              <div class="card amber">
+                <div class="tag">The in-between</div>
+                <h3>Weeks of small signals</h3>
+                <p>Voice notes, sleep, mood, stress — lived through, but never quite written down.</p>
+              </div>
+              <div class="card sage">
+                <div class="tag">The gap</div>
+                <h3>Well-meaning, disconnected</h3>
+                <p>No one is at fault. The loop between living and reporting is just broken.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 · THE IDEA (+ protocol) -->
+        <section class="slide" data-notes="The idea, framed gently: not another app, but a companion invited for a purpose and let go when no longer needed. Walk through the four steps as consent and control, not a sales pitch.">
+          <div class="slide-num">03 / 08</div>
+          <div class="reveal kicker">The idea</div>
+          <h2 class="reveal">A companion <span class="s">invited for a purpose</span>, then let go.</h2>
+          <p class="lead reveal">
+            Not another app. A temporary sidecar, offered through a small protocol, that
+            lives inside your personal agent for as long as it’s useful — and leaves when
+            you’re done.
+          </p>
+          <div class="reveal" style="margin-top:38px">
+            <div class="grid-4">
+              <div class="card step">
+                <div class="step-num">1</div>
+                <div>
+                  <h3>Invite</h3>
+                  <p>A doctor or template offers a sidecar tuned to a question.</p>
+                </div>
+              </div>
+              <div class="card step">
+                <div class="step-num">2</div>
+                <div>
+                  <h3>Consent</h3>
+                  <p>You grant read-only access to specific data. Nothing more.</p>
+                </div>
+              </div>
+              <div class="card step">
+                <div class="step-num">3</div>
+                <div>
+                  <h3>Observe</h3>
+                  <p>It notices patterns — each one traceable to the notes behind it.</p>
+                </div>
+              </div>
+              <div class="card step">
+                <div class="step-num">4</div>
+                <div>
+                  <h3>Let go</h3>
+                  <p>A TTL, an audit log, and a revoke button. You stay in control.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 · COLLAB -->
+        <section class="slide" data-notes="Two perspectives held together. Your host agent knows your life; the sidecar knows the domain. Neither sees the whole picture alone. The example is illustrative — no fabricated numbers, just a human reading of a hard month.">
+          <div class="slide-num">04 / 08</div>
+          <div class="reveal kicker">Two perspectives</div>
+          <h2 class="reveal">Your agent knows your life. <span class="s">The sidecar knows the domain.</span></h2>
+          <p class="lead reveal">
+            Neither sees the whole picture alone. Together, they can hold both — your
+            calendar and your sleep, your deadlines and your mood — in one frame.
+          </p>
+          <div class="reveal">
+            <div class="collab">
+              <div class="agent generalist">
+                <div class="icon">H</div>
+                <h3>Your agent — generalist</h3>
+                <p>Holds the calendar, the flights, the deadlines, the wider context of a life.</p>
+              </div>
+              <div class="bridge">
+                hold together
+                <span class="arrow">⇄</span>
+                one picture
+              </div>
+              <div class="agent specialist">
+                <div class="icon">V</div>
+                <h3>VitaSide — specialist</h3>
+                <p>Holds sleep, stress, and the quieter signals the body keeps.</p>
+              </div>
+            </div>
+            <div class="collab-out">
+              <span class="lbl">Example reading (illustrative)</span>
+              The weeks with late flights and deadlines were also the weeks sleep shortened
+              and mood notes turned quieter. One perspective sees the calendar; the other
+              sees the cost. <b>Together, they make sense of a hard month</b> — without
+              inventing a number to prove it.
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 · WHAT IT DOES (demo + what-if) -->
+        <section class="slide" data-notes="Honest about what runs today: a working prototype that finds patterns with citations and can explore a what-if from the patient's own good vs poor periods. Emphasise: exploration, not prediction.">
+          <div class="slide-num">05 / 08</div>
+          <div class="reveal kicker">What it does, today</div>
+          <h2 class="reveal">Patterns you can <span class="s">trace back</span> to a source.</h2>
+          <p class="lead reveal">
+            A working prototype you can run locally. It finds patterns and cites the notes
+            behind them. It can explore a <em>what-if</em> — what if sleep steadied for two
+            weeks? — by looking at your own good and poor periods, not a population average.
+          </p>
+          <div class="reveal" style="margin-top:30px">
+            <div class="grid-2" style="align-items:start">
+              <div class="record">
+                <div class="record-bar">
+                  <span class="rec">Running locally</span>
+                  <span>vitaside · bash</span>
+                </div>
+                <pre><span class="c"># invite a sidecar</span>
+<span class="g">$</span> ./issue-sidecar.sh sleep-stress-sidecar
+
+<span class="c"># find patterns — each cited to a dated note</span>
+<span class="g">$</span> python3 run_demo_check.py analyze
+<span class="y">→ patterns found · linked to source notes</span>
+
+<span class="c"># explore a what-if from your own history</span>
+<span class="g">$</span> python3 run_demo_check.py whatif
+<span class="p">→ contrasts your good vs poor periods</span>
+
+<span class="c"># a report to bring to the visit</span>
+<span class="g">$</span> python3 run_demo_check.py html</pre>
+              </div>
+              <div>
+                <div class="card" style="margin-bottom:18px">
+                  <div class="tag">Illustrative timeline</div>
+                  <div class="timeline">
+                    <div class="row"><div class="row-label">Sleep</div><div class="bar-track"><div class="bar amber" style="--w:58%"></div></div></div>
+                    <div class="row"><div class="row-label">Stress</div><div class="bar-track"><div class="bar clay" style="--w:70%"></div></div></div>
+                    <div class="row"><div class="row-label">Mood notes</div><div class="bar-track"><div class="bar" style="--w:42%"></div></div></div>
+                  </div>
+                  <div class="caption">From your own data · not a population</div>
+                </div>
+                <div class="method">
+                  <b>Exploration, not prediction.</b> A what-if draws on your own good and
+                  poor periods to suggest a direction — with honesty about how much data
+                  stands behind it. For awareness and conversation, not diagnosis.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6 · PRIVACY & CITATIONS -->
+        <section class="slide" data-notes="The trust slide. Every pattern links back to the note that produced it. Nothing leaves the device unless the patient chooses to export. Redaction bars show the default posture.">
+          <div class="slide-num">06 / 08</div>
+          <div class="reveal kicker">Your data, your terms</div>
+          <h2 class="reveal">Cited, not <span class="v">invented</span>. Nothing leaves unless you say so.</h2>
+          <div class="reveal" style="margin-top:30px">
+            <div class="grid-2" style="align-items:start">
+              <div class="card">
+                <div class="tag">Every pattern · grounded</div>
+                <h3 style="font-family:var(--serif); font-weight:600; font-size:1.2rem;">Linked to the note behind it</h3>
+                <div class="quote">
+                  A note from your own week, quoted in the report with its date — the way
+                  every pattern is tied to something you actually said or measured.
+                  <span class="src">— cited note · dated · auditable</span>
+                </div>
+                <p style="margin-top:18px; font-family:var(--mono); font-size:0.82rem; color:var(--ink-soft); line-height:1.65">
+                  Visible to doctor by default: <span class="redact">██████████████</span><br/>
+                  You choose what to share, and when.
+                </p>
+              </div>
+              <div class="card sage">
+                <div class="tag">Local by default</div>
+                <h3>It stays where it lives</h3>
+                <p>Your data doesn’t travel to a server to be understood. The sidecar reads
+                  locally, writes an audit log of every file it touched, and stops when its
+                  time is up.</p>
+                <p style="margin-top:16px; font-family:var(--mono); font-size:0.84rem; color:var(--sage)">
+                  0 bytes leave the device unless you export.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 · DIRECTION -->
+        <section class="slide" data-notes="Honest about where this is: one sidecar, in development. The same small protocol could one day let any specialist offer one. Framed as a direction we're curious about, not a promise.">
+          <div class="slide-num">07 / 08</div>
+          <div class="reveal kicker">A direction, not a promise</div>
+          <h2 class="reveal">One companion today. <span class="s">Many, perhaps, one day.</span></h2>
+          <p class="lead reveal">
+            Today: a sleep-stress-metabolism sidecar, in active development. The same small
+            protocol could, in time, let any specialist offer one — cardiologist,
+            endocrinologist, coach — each alongside the others, with the same consent and
+            the same expiry.
+          </p>
+          <div class="reveal" style="margin-top:40px">
+            <div class="grid-3">
+              <div class="card">
+                <div class="tag">Today</div>
+                <h3>One sidecar</h3>
+                <p>A sleep-stress-metabolism companion, being built and tested carefully.</p>
+              </div>
+              <div class="card sage">
+                <div class="tag">The pattern</div>
+                <h3>Any specialist</h3>
+                <p>One day, a doctor could offer a sidecar tuned to the question in front of them.</p>
+              </div>
+              <div class="card amber">
+                <div class="tag">Beyond</div>
+                <h3>The same shape</h3>
+                <p>The same idea — invited, scoped, temporary — wherever a little expert help is wanted.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8 · CLOSE -->
+        <section class="slide" data-notes="Close warmly. Understand yourself a little better; bring more to the visit. Not a medical device, not a diagnosis. A quieter way to notice your own patterns.">
+          <div class="slide-num">08 / 08</div>
+          <div class="ecg ecg-bottom">
+            <svg viewBox="0 0 2400 80" preserveAspectRatio="none">
+              <path class="ecg-trace" d="M0,40 H180 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H360 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H540 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H720 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H900 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1080 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1260 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1440 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1620 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1800 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H1980 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2160 l18,-6 l12,12 l14,0 l10,-40 l14,78 l12,-44 H2400"/>
+            </svg>
+          </div>
+          <div class="reveal kicker">VitaSide</div>
+          <h2 class="reveal">Understand yourself a little better. <span class="s">Bring more to the visit.</span></h2>
+          <p class="lead reveal">
+            Not a medical device. Not a diagnosis. A <em>quieter way to notice</em> your own
+            patterns — and to put them into words when it matters.
+          </p>
+          <div class="reveal pillars">
+            <span class="pillar c">Local</span>
+            <span class="pillar s">Temporary</span>
+            <span class="pillar i">Yours</span>
+          </div>
+          <div class="reveal">
+            <a class="cta" href="https://github.com/lamapony/vitaside-hackathon">
+              Open the repo &amp; run the prototype
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
           </div>
-          <div class="signal-strip" aria-label="Product highlights">
-            <div class="signal">
-              <b>Local</b>
-              <span>No cloud sync by default. Personal health data stays on the user's device.</span>
-            </div>
-            <div class="signal">
-              <b>Scoped</b>
-              <span>Read-only access is issued through a manifest with TTL and audit logs.</span>
-            </div>
-            <div class="signal">
-              <b>Useful</b>
-              <span>Patterns, lagged correlations, anomalies, and simulations for better visits.</span>
-            </div>
-          </div>
-        </div>
-      </header>
+          <p class="disclaimer reveal">
+            Working prototype · in active development · for self-observation and visit
+            preparation · not a medical device · not a diagnostic tool.
+          </p>
+        </section>
 
-      <section id="why">
-        <div class="shell">
-          <div class="section-head">
-            <h2>Doctors see snapshots. VitaSide reconstructs the weeks between them.</h2>
-            <p>
-              Wearables show numbers, journals hold context, and voice notes capture lived
-              reality. VitaSide connects those streams locally so a patient can walk into an
-              appointment with specific observations instead of vague memory.
-            </p>
-          </div>
-          <div class="grid-3">
-            <article class="card">
-              <h3>Voice becomes signal</h3>
-              <p>
-                Omi and journal notes are parsed into dated signals for sleep, stress, food,
-                mood, activity, and symptoms.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Biometrics get context</h3>
-              <p>
-                Sleep, HRV, steps, SpO2, and other Apple Health metrics are compared against
-                the user's own baseline.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Reports stay grounded</h3>
-              <p>
-                Every insight includes confidence, citations, and a clear disclaimer: this is
-                self-observation, not diagnosis.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="demo" id="demo">
-        <div class="shell">
-          <div class="section-head">
-            <h2>The demo ships as a real MCP sidecar.</h2>
-            <p>
-              The current implementation runs a local Python MCP server, analyzes demo or
-              real user data, produces a what-if simulation, and exports an HTML report.
-            </p>
-          </div>
-          <div class="demo-layout">
-            <div class="terminal" aria-label="Demo commands">
-              <div class="terminal-top" aria-hidden="true">
-                <span class="dot"></span>
-                <span class="dot"></span>
-                <span class="dot"></span>
-              </div>
-              <pre>cd code/health-mcp-starter
-pip install -r requirements.txt
-./run-demo.sh
-
-# Full judge flow:
-# self-test -> pattern analysis -> what-if simulation -> report</pre>
-            </div>
-            <article class="card">
-              <h3>Doctor-ready pattern output</h3>
-              <div class="timeline" aria-label="Example timeline visualization">
-                <div class="row">
-                  <div class="row-label">Sleep</div>
-                  <div class="bar-track"><div class="bar" style="width: 78%"></div></div>
-                </div>
-                <div class="row">
-                  <div class="row-label">Stress</div>
-                  <div class="bar-track"><div class="bar coral" style="width: 54%"></div></div>
-                </div>
-                <div class="row">
-                  <div class="row-label">HRV</div>
-                  <div class="bar-track"><div class="bar gold" style="width: 66%"></div></div>
-                </div>
-                <div class="row">
-                  <div class="row-label">Mood</div>
-                  <div class="bar-track"><div class="bar" style="width: 72%"></div></div>
-                </div>
-              </div>
-              <p class="quote">
-                "On high-stress days followed by short sleep, fatigue mentions increase in
-                the next 48 hours. Confidence: medium. Sources: Omi excerpts and Apple Health
-                sleep records."
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="protocol">
-        <div class="shell">
-          <div class="section-head">
-            <h2>A small protocol for safe expert intelligence injection.</h2>
-            <p>
-              VitaSide is not another health app. It is a sidecar pattern: a specialist agent
-              issued for a limited purpose, loaded by a personal AI host, and revoked when its
-              job is done.
-            </p>
-          </div>
-          <div class="protocol">
-            <article class="card step">
-              <div class="step-number">1</div>
-              <div>
-                <h3>Issue</h3>
-                <p>A doctor or template creates a manifest for a specialist sidecar.</p>
-              </div>
-            </article>
-            <article class="card step">
-              <div class="step-number">2</div>
-              <div>
-                <h3>Scope</h3>
-                <p>The user grants read-only access to approved local folders and exports.</p>
-              </div>
-            </article>
-            <article class="card step">
-              <div class="step-number">3</div>
-              <div>
-                <h3>Analyze</h3>
-                <p>The sidecar exposes MCP tools for correlations, anomalies, and simulations.</p>
-              </div>
-            </article>
-            <article class="card step">
-              <div class="step-number">4</div>
-              <div>
-                <h3>Expire</h3>
-                <p>TTL, audit logs, and local execution keep control with the patient.</p>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="build">
-        <div class="shell">
-          <div class="section-head">
-            <h2>Built for a credible hackathon demo, not a mockup.</h2>
-            <p>
-              The repository includes the MCP server, demo data generation, report rendering,
-              a sidecar protocol wrapper, quality gates, and a live script for judges.
-            </p>
-          </div>
-          <div class="grid-3">
-            <article class="card">
-              <h3>MCP-native tools</h3>
-              <p>
-                `analyze_lifestyle_patterns`, `simulate_whatif`, `generate_doctor_report`,
-                `find_correlation`, and source inspection tools.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Local safety model</h3>
-              <p>
-                Manifest scopes, TTL checks, audit trail, no network dependency, and safe
-                fallback to generated demo data.
-              </p>
-            </article>
-            <article class="card">
-              <h3>Pitch-ready output</h3>
-              <p>
-                A 6-8 minute story: issue sidecar, analyze patterns, run what-if, export the
-                report, and explain the extensible protocol.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="shell footer-inner">
-        <span>VitaSide - personal pattern intelligence for self-observation.</span>
-        <span>Local-first. Temporary. Audited.</span>
       </div>
-    </footer>
+
+      <div class="chrome">
+        <div class="counter" id="counter">01 / 08</div>
+        <div class="dots" id="dots"></div>
+        <div class="nav-btns">
+          <button class="nav-btn" id="prev" aria-label="Previous slide">
+            <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="nav-btn" id="next" aria-label="Next slide">
+            <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="notes" id="notes">
+        <div class="notes-head">
+          <span class="lbl">Presenter notes</span>
+          <span class="esc">press <span class="key">P</span> to hide</span>
+        </div>
+        <div class="notes-body" id="notes-body"></div>
+      </div>
+
+      <div class="overview" id="overview">
+        <div class="overview-grid" id="overview-grid"></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const dotsWrap = document.getElementById("dots");
+        const counter = document.getElementById("counter");
+        const progress = document.getElementById("progress");
+        const notes = document.getElementById("notes");
+        const notesBody = document.getElementById("notes-body");
+        const overview = document.getElementById("overview");
+        const overviewGrid = document.getElementById("overview-grid");
+        let current = 0;
+
+        const titles = [
+          "VitaSide — cover",
+          "What gets lost between visits",
+          "A companion invited, then let go",
+          "Two perspectives, one picture",
+          "Patterns you can trace back",
+          "Cited, not invented",
+          "A direction, not a promise",
+          "Understand yourself a little better"
+        ];
+
+        slides.forEach((_, i) => {
+          const d = document.createElement("div");
+          d.className = "dot-nav";
+          d.addEventListener("click", () => go(i));
+          dotsWrap.appendChild(d);
+
+          const o = document.createElement("div");
+          o.className = "ov-card";
+          o.innerHTML = '<div class="n">' + String(i + 1).padStart(2, "0") + " / " + String(slides.length).padStart(2, "0") + '</div><div class="t">' + titles[i] + "</div>";
+          o.addEventListener("click", () => { go(i); closeOverview(); });
+          overviewGrid.appendChild(o);
+        });
+
+        const dots = Array.from(document.querySelectorAll(".dot-nav"));
+        function pad(n) { return String(n + 1).padStart(2, "0"); }
+
+        function go(i) {
+          i = Math.max(0, Math.min(slides.length - 1, i));
+          if (i === current && slides[i].classList.contains("is-active")) return;
+          slides[current].classList.remove("is-active");
+          dots[current].classList.remove("is-active");
+          current = i;
+          slides[current].classList.add("is-active");
+          dots[current].classList.add("is-active");
+          counter.textContent = pad(current) + " / " + pad(slides.length - 1);
+          progress.style.width = ((current + 1) / slides.length * 100) + "%";
+          notesBody.textContent = slides[current].dataset.notes || "";
+        }
+
+        function next() { go(current + 1); }
+        function prev() { go(current - 1); }
+        function toggleNotes() { notes.classList.toggle("open"); }
+        function closeOverview() { overview.classList.remove("open"); }
+        function toggleOverview() { overview.classList.toggle("open"); }
+        function toggleFullscreen() {
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+          else document.exitFullscreen && document.exitFullscreen();
+        }
+
+        document.getElementById("next").addEventListener("click", next);
+        document.getElementById("prev").addEventListener("click", prev);
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); next(); }
+          else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); prev(); }
+          else if (e.key === "Home") go(0);
+          else if (e.key === "End") go(slides.length - 1);
+          else if (e.key === "p" || e.key === "P") toggleNotes();
+          else if (e.key === "o" || e.key === "O") toggleOverview();
+          else if (e.key === "f" || e.key === "F") toggleFullscreen();
+          else if (e.key === "Escape") closeOverview();
+        });
+
+        let touchX = null;
+        document.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+        document.addEventListener("touchend", (e) => {
+          if (touchX == null) return;
+          const dx = e.changedTouches[0].clientX - touchX;
+          if (Math.abs(dx) > 60) (dx < 0 ? next : prev)();
+          touchX = null;
+        }, { passive: true });
+
+        let wheelLock = false;
+        document.addEventListener("wheel", (e) => {
+          if (wheelLock) return;
+          if (notes.classList.contains("open") || overview.classList.contains("open")) return;
+          if (Math.abs(e.deltaY) < 24) return;
+          wheelLock = true;
+          (e.deltaY > 0 ? next : prev)();
+          setTimeout(() => { wheelLock = false; }, 750);
+        }, { passive: true });
+
+        go(0);
+      })();
+    </script>
   </body>
 </html>

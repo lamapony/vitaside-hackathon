@@ -1,0 +1,46 @@
+# Sidecar scope + optional Azure minimization (template)
+# Copy to sidecars/<name>/manifest.yaml and adjust paths. Never commit real home paths to public repos.
+
+name: "sleep-stress-sidecar"
+version: "0.1"
+description: "Personal pattern sidecar — local read only unless Azure block enabled"
+issuer: "doctor@example.com"   # or patient-self@example.com for self-issued
+ttl: "30d"
+issued_at: "2026-06-28T00:00:00Z"
+
+# --- Privacy contract: filesystem scope ---
+allowed_scopes:
+  - path: "${OMI_VAULT_PATH}/050 Daily Omi"   # resolve at issue time; one scope per sensitive root
+    permissions: ["read"]
+  # Optional: Apple export folder (read-only)
+  # - path: "${APPLE_HEALTH_EXPORT_DIR}"
+  #   permissions: ["read"]
+
+# --- Tool allow-list (MCP contract) ---
+tools:
+  - analyze_lifestyle_patterns
+  - find_correlation
+  - simulate_whatif
+  - generate_doctor_report
+  - list_data_sources
+  - get_azure_contract
+  - preview_azure_payload
+
+# --- Optional cloud boost (default off for privacy-first) ---
+enable_azure_boost: false
+azure:
+  allowed_operations: []   # e.g. [enhance_insight] or [share_report] — never "*"
+  data_policy:
+    max_excerpt_chars: 140
+    anonymize_by_default: true
+    include_signal_counts: true
+    include_whatif: false
+
+quality_gates:
+  - always_include_confidence
+  - always_cite_sources
+  - include_disclaimer
+
+server:
+  command: python3
+  args: ["${VITASIDE_MCP_ENTRY}/health-pattern-mcp.py"]

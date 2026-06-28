@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { isDemoMode, isForceDemo, subscribeDemoMode, setForceDemo } from "./demoTransport";
 import {
   Briefing,
   ConditionPack,
@@ -24,6 +25,46 @@ import { DoctorHandoff } from "./pages/DoctorHandoff";
 import { MyContext } from "./pages/MyContext";
 import { DataSources } from "./pages/DataSources";
 import { Smart } from "./pages/Smart";
+import { SidecarPage } from "./pages/Sidecar";
+
+function DemoStatusStrip({ active, forced }: { active: boolean; forced: boolean }) {
+  if (!active && !forced) {
+    return (
+      <div className="demo-strip live" role="status">
+        <span className="demo-dot" />
+        <span className="demo-label">Live API connected</span>
+        <button
+          type="button"
+          className="demo-btn"
+          onClick={() => {
+            setForceDemo(true);
+            window.location.reload();
+          }}
+        >
+          Use sample data
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="demo-strip sample" role="status">
+      <span className="demo-dot" />
+      <span className="demo-label">
+        {forced ? "Sample data (locked for demo)" : "Sample data — live API not reachable"}
+      </span>
+      <button
+        type="button"
+        className="demo-btn"
+        onClick={() => {
+          setForceDemo(false);
+          window.location.reload();
+        }}
+      >
+        Try live API
+      </button>
+    </div>
+  );
+}
 
 export default function App() {
   const [tab, setTab] = useState<TabId>("dashboard");
@@ -45,6 +86,9 @@ export default function App() {
   const [fatalError, setFatalError] = useState<string>();
   const [partialErrors, setPartialErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [demoActive, setDemoActive] = useState(isDemoMode());
+  useEffect(() => subscribeDemoMode(() => setDemoActive(isDemoMode())), []);
 
   const refreshNextSteps = useCallback(async () => {
     const data = await getJson<NextStepsResponse>(`/api/next-steps?condition_id=${selectedPack}`);
@@ -169,7 +213,7 @@ export default function App() {
         if (tab === "smart" && (!smart || !narrative)) {
           const [smartData, narrativeData] = await Promise.all([
             smart ? Promise.resolve(smart) : getJson<SmartAnalysis>("/api/smart"),
-            narrative ? Promise.resolve(narrative) : getJson<Narrative>("/api/narrative?locale=ru")
+            narrative ? Promise.resolve(narrative) : getJson<Narrative>("/api/narrative?locale=en")
           ]);
           if (!cancelled) {
             setSmart(smartData);
@@ -208,9 +252,10 @@ export default function App() {
       />
 
       <div className="main-column">
+        <DemoStatusStrip active={demoActive} forced={isForceDemo()} />
         <main>
           {loading && tab === "dashboard" && <DashboardSkeleton />}
-          {loading && tab !== "dashboard" && <Loading label="Загружаем ваши данные…" />}
+          {loading && tab !== "dashboard" && <Loading label="Loading your data…" />}
           {fatalError && <ErrorBox message={fatalError} />}
           {error && <ErrorBox message={error} />}
           {!loading && !fatalError && partialErrors.length > 0 && (
@@ -257,11 +302,14 @@ export default function App() {
           {!loading && !fatalError && !error && tab === "smart" && (
             wave2Loading && !smart ? <Loading /> : <Smart smart={smart} narrative={narrative} />
           )}
+          {!loading && !fatalError && !error && tab === "sidecar" && (
+            <SidecarPage sidecar={sidecar} />
+          )}
         </main>
 
         <footer>
           <span>{disclaimer}</span>
-          <span>Обработка локально · sidecar логируется для вашего контроля</span>
+          <span>Processed locally · sidecar access is logged for your review</span>
         </footer>
       </div>
     </div>

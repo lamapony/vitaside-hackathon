@@ -1,7 +1,13 @@
-mcp>=1.2.0
-pandas>=2.0
-numpy>=1.24
-scipy>=1.10
-PyYAML>=6.0
-fastapi>=0.111
-uvicorn[standard]>=0.30
+# Runtime dependencies for VitaSide health-pattern MCP server.
+# Python 3.10+ required (uses datetime.date.fromisoformat, typing | unions in some modules).
+mcp>=1.2.0,<2.0
+pandas>=2.0,<3.0
+numpy>=1.24,<3.0
+scipy>=1.10,<2.0
+PyYAML>=6.0,<7.0
+fastapi>=0.111,<0.120
+uvicorn[standard]>=0.30,<1.0
+# Image processing for the optional skin photo ABCDE observation tool.
+pillow>=10.0,<12.0
+# Multipart form support for file uploads (skin photo endpoint).
+python-multipart>=0.0.9,<0.1

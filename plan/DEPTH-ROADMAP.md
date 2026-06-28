@@ -57,6 +57,8 @@
 
 **Not now:** ML diagnosis, risk scores, government/regulatory path.
 
+**Skin photo tool (2026-06-27):** observational ABCDE only — explicitly out of scope for diagnosis/risk framing.
+
 ---
 
 ## Phase D5 — Agent Native (Hermes production)

@@ -25,6 +25,43 @@ OPERATIONS = (
 
 DEFAULT_MAX_EXCERPT = 140
 
+# Azure services mapping under strict data minimization controls.
+# All services receive ONLY minimized aggregates, consented excerpts (max 140 chars default),
+# no raw transcripts, no vault paths, no full health exports.
+# See build_payload() and validate_outbound() for enforcement.
+AZURE_SERVICES = {
+    "storage": {
+        "service": "Azure Blob Storage",
+        "use": "Temporary storage of consented share_report payloads (TTL, SAS tokens, encryption at rest)",
+        "controls": "Never store raw data; only minimized JSON; customer-managed keys recommended; EU data residency",
+        "data_min": "payload_fingerprint + local_summary aggregates only"
+    },
+    "ai": {
+        "service": "Azure OpenAI Service",
+        "use": "enhance_insight: richer narrative, explanations from patterns only",
+        "controls": "Private endpoints, content filters, responsible AI, Managed Identity preferred over keys",
+        "data_min": "local_summary (no PII beyond short anonymized excerpts)"
+    },
+    "functions": {
+        "service": "Azure Functions",
+        "use": "share_report endpoint: receive minimized payload, generate time-limited link + optional PDF",
+        "controls": "Stateless, short TTL (48h default), no persistent storage of raw; audit on ingress",
+        "data_min": "same as build_payload for share_report"
+    },
+    "search": {
+        "service": "Azure AI Search",
+        "use": "embed_search: semantic over embeddings of consented notes (future)",
+        "controls": "Send only vector embeddings + query id, never raw text unless explicit consent + max excerpt",
+        "data_min": "embeddings + metadata aggregates"
+    },
+    "health": {
+        "service": "Azure Health Data Services (FHIR)",
+        "use": "fhir_export: convert visit bundle to FHIR resources for EHR interoperability",
+        "controls": "Only consented export; patient ID pseudonymized if possible; no full history",
+        "data_min": "structured report JSON subset"
+    },
+}
+
 
 def azure_enabled(manifest: Dict[str, Any]) -> bool:
     if manifest.get("enable_azure_boost") is True:
@@ -129,7 +166,7 @@ def build_payload(
     period_compare: Optional[Dict[str, Any]] = None,
     user_consent: bool = False,
     anonymize: bool = True,
-    locale: str = "ru",
+    locale: str = "en",
     prompt_hint: str = "",
 ) -> Dict[str, Any]:
     """Build a cloud-safe payload. Does NOT send anything — preview / handoff only."""
@@ -283,4 +320,6 @@ def contract_info(manifest: Dict[str, Any]) -> Dict[str, Any]:
             "azure.data_policy.max_excerpt_chars": DEFAULT_MAX_EXCERPT,
         },
         "docs": "docs/AZURE-CONTRACT.md",
+        "azure_services": AZURE_SERVICES,
+        "strict_controls_note": "All Azure services enforce data_minimization: no raw transcripts, no vault paths, max_excerpt_chars, anonymize_by_default. Payloads are validated before any outbound.",
     }

@@ -114,6 +114,10 @@ run_test "get_sidecar_status" \
     "npx mcporter call --stdio '$SERVER_STDIO' get_sidecar_status --timeout 30000" \
     "expires_at"
 
+run_test "health_check" \
+    "npx mcporter call --stdio '$SERVER_STDIO' health_check --timeout 60000 --args '{\"include_sources\":false}'" \
+    "expires_at"
+
 run_test "collaborative_insight" \
     "npx mcporter call --stdio '$SERVER_STDIO' collaborative_insight --timeout 60000" \
     '"collaborative_insight"'
@@ -121,6 +125,10 @@ run_test "collaborative_insight" \
 run_test "collaborative_insight with host_context" \
     "npx mcporter call --stdio '$SERVER_STDIO' collaborative_insight --timeout 60000 --args '{\"host_context\":{\"agent\":\"hermes\",\"events\":[{\"date\":\"2026-05-02\",\"type\":\"travel\",\"note\":\"Red-eye flight\"},{\"date\":\"2026-05-16\",\"type\":\"deadline\",\"note\":\"Launch week\"}]}}'" \
     '"collaborative_insight"'
+
+run_test "build_visit_packet (canonical)" \
+    "npx mcporter call --stdio '$SERVER_STDIO' build_visit_packet --timeout 120000 --args '{\"formats\":[\"markdown\"]}'" \
+    '"disclaimer"'
 
 # Depth tools — run only when backend registers them
 TOOLS_LIST=$(npx mcporter list --stdio "$SERVER_STDIO" 2>/dev/null || true)

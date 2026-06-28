@@ -22,7 +22,14 @@
 - [x] `weekly_summary_report`
 - [x] `compare_periods`
 
-## Next (P5)
+## Sprint P5 — Audit hardening ✅ (2026-06-27)
+- [x] Skin ABCDE observational-only (no risk score)
+- [x] Privacy-first vault path resolution
+- [x] requirements.txt complete (pillow, python-multipart)
+- [x] Skin API Form() + size limit + graceful errors
+- [x] Plan docs synced to code reality
+
+## Next (P6)
 - [ ] PDF export
 - [ ] Hermes live `needs_context` flow
 - [ ] Sidecar registry → auto MCP config writer

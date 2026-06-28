@@ -88,7 +88,7 @@ export function Smart({ smart, narrative }: Props) {
 
       {narrative?.narrative && (
         <div className="soft-card narrative-block">
-          <p className="eyebrow">Local narrative · {narrative.locale ?? "ru"}</p>
+          <p className="eyebrow">Local narrative · {narrative.locale ?? "en"}</p>
           <h2>Your story from the data</h2>
           {narrative.narrative.split("\n\n").map((paragraph, index) => (
             <p key={index} className="narrative-paragraph">
@@ -125,7 +125,7 @@ export function Smart({ smart, narrative }: Props) {
                 <div>
                   <strong>{effect.signal.replace(/_/g, " ")}</strong>
                   <span>
-                    {effect.weekday_name_ru ?? effect.weekday_name} · {effect.lift.toFixed(1)}× lift
+                    {effect.weekday_name ?? effect.weekday_name_ru} · {effect.lift.toFixed(1)}× lift
                   </span>
                 </div>
                 <div className="bar-track">
@@ -197,7 +197,7 @@ function buildRegimeCards(smart?: SmartAnalysis) {
       label: "Rhythm",
       title: weekday.length ? "Weekday pattern detected" : "No strong weekday rhythm",
       detail: weekday.length
-        ? `${weekday[0].weekday_name_ru ?? weekday[0].weekday_name} has the strongest ${weekday[0].signal.replace(/_/g, " ")} lift.`
+        ? `${weekday[0].weekday_name ?? weekday[0].weekday_name_ru} has the strongest ${weekday[0].signal.replace(/_/g, " ")} lift.`
         : "No weekday effect is strong enough to highlight yet.",
       tone: weekday.length ? "watch" : "neutral"
     },
@@ -332,6 +332,7 @@ function N1CompareCard() {
             </div>
           )}
           {compare.p_value != null && <div className="meta">Exploratory p-value: {compare.p_value}</div>}
+          {compare.q_value != null && <div className="meta">FDR q-value: {compare.q_value} (multiple-comparison adjusted)</div>}
           {compare.confidence && <div className="meta">Confidence: {compare.confidence}</div>}
           {compare.example?.excerpt && (
             <blockquote>

@@ -1,0 +1,15 @@
+{
+  "profile": {
+    "display_name": "",
+    "age": "",
+    "timezone": "Europe/Copenhagen",
+    "main_goal": "Visit prep — patterns only, not diagnosis",
+    "doctor_notes": ""
+  },
+  "conditions": [],
+  "medications": [],
+  "goals": [],
+  "manual_logs": [],
+  "updated_at": null,
+  "_comment": "Copy to local-data/user_context.json via scripts/init_founder_context.sh — never commit local-data/"
+}

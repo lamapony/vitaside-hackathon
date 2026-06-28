@@ -49,13 +49,13 @@ def build_clinical_summary(
     medications = ctx.get("medications") or []
     problem_list = [c.get("name", "") for c in conditions if c.get("name")][:5]
 
-    flags: List[str] = []
+    observations: List[str] = []
     attention = smart.get("attention_now") or []
     for item in attention[:3]:
-        flags.append(item.get("reason") or item.get("signal") or str(item))
+        observations.append(item.get("reason") or item.get("signal") or str(item))
     for p in top_patterns:
         if p.get("q_value", 1) < 0.1 or p.get("p_value", 1) < 0.05:
-            flags.append(f"Pattern {p.get('cause')}→{p.get('effect')} (lag {p.get('lag')}d)")
+            observations.append(f"Pattern {p.get('cause')}→{p.get('effect')} (lag {p.get('lag')}d)")
 
     headline_parts = []
     if analysis.get("unique_dates"):
@@ -88,7 +88,7 @@ def build_clinical_summary(
             for p in top_patterns
         ],
         "wearable_alignment": (merge or {}).get("merged_insights", [])[:3],
-        "flags_for_review": flags[:5],
+        "observations_for_review": observations[:5],
         "visit_questions": (questions.get("questions") or [])[:6],
         "days_analyzed": analysis.get("unique_dates", 0),
         "overlap_days": (merge or {}).get("overlap_days", 0),

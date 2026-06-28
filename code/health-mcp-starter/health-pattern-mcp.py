@@ -24,6 +24,7 @@ from sidecar_protocol import (
     load_manifest,
     assert_sidecar_active,
     check_scope,
+    allowed_roots,
     audit,
     audit_summary,
     is_expired,
@@ -34,14 +35,23 @@ from report_doctor import generate_doctor_view
 from apple_merge import parse_daily, merge_with_omi
 from anonymize import anonymize_text, anonymize_citations
 from visit_questions import generate_visit_questions as build_visit_questions
-from export_obsidian import build_obsidian_note
+from export_obsidian import build_obsidian_note, PP01_PAIN_POINT_CITATION
 from analytics_depth import add_pvalues, apply_fdr, weekly_summary, compare_periods as compare_periods_analysis
 from clinical_summary import build_clinical_summary
 from n1_compare import run_n1_compare as _run_n1_compare
 from fhir_export import build_fhir_bundle
 from condition_tracking import list_packs, load_pack, track_entries, format_condition_report
 from actionable_insights import build_actionable_briefing, format_briefing_terminal
+from omi_parser_quality import (
+    LOW_QUALITY_THRESHOLD,
+    assess_from_entry,
+    assess_parse_quality,
+    blend_statistical_confidence,
+    ui_quality_band,
+)
 from smart_analytics import run_smart_analysis
+from doctor_handoff_export import export_print_bundle_from_markdown
+from longitudinal_store import get_personal_baselines_payload
 from journal_insights import (
     headache_trigger_correlations,
     journal_digest,
@@ -58,7 +68,7 @@ from data_sources import (
     omi_search_paths as _omi_search_paths_ds,
 )
 from azure_contract import build_payload, contract_info, azure_enabled
-from azure_boost import azure_status, enhance_insight as azure_enhance, share_report as azure_share, require_azure
+from azure_boost import azure_status, enhance_insight as azure_enhance, share_report as azure_share, require_azure, embed_search as azure_embed, fhir_export as azure_fhir
 from skin_analysis import analyze_skin_photo as _analyze_skin_photo
 
 _MANIFEST: Optional[Dict[str, Any]] = None
@@ -75,6 +85,39 @@ def _with_gates(payload: Dict[str, Any]) -> Dict[str, Any]:
     payload.setdefault("disclaimer", DISCLAIMER)
     payload.setdefault("quality_gates", _get_manifest().get("quality_gates", []))
     return payload
+
+
+def _resolve_visits_output_dir(manifest: Dict[str, Any]) -> Path:
+    """Vault-native visit folder (05-Second-Brain / 03-Visits pattern)."""
+    env = os.getenv("VITASIDE_VISITS_DIR")
+    if env:
+        candidate = Path(os.path.expanduser(env)).resolve()
+        roots = allowed_roots(manifest)
+        if not roots or check_scope(manifest, candidate):
+            return candidate
+    roots = allowed_roots(manifest)
+    candidates: List[Path] = []
+    if roots:
+        for root in roots:
+            name = root.name.lower()
+            if "visit" in name:
+                candidates.append(root)
+            candidates.append((root.parent / "03-Visits").resolve())
+            candidates.append((root / "Visits").resolve())
+    candidates.append((OMI_VAULT_PATH / "03-Visits").resolve())
+    candidates.append((_DEMO_VAULT / "03-Visits").resolve())
+    seen = set()
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        if not allowed_roots(manifest) or check_scope(manifest, path):
+            return path
+    return (_SCRIPT_DIR / "out").resolve()
+
+
+def _visit_packet_entity_id(visit_date: str) -> str:
+    return f"vp-{visit_date.replace('-', '')}-gp"
 
 try:
     import pandas as pd
@@ -93,8 +136,17 @@ DISCLAIMER = (
 )
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
-_DEFAULT_VAULT = Path(os.getenv("OMI_VAULT_PATH", "/Users/dmitriibabinov/Documents/Obsidian Vault"))
 _DEMO_VAULT = _SCRIPT_DIR / "demo-data" / "vault"
+# Privacy-first: never hardcode a specific user's vault path in source.
+# Prefer explicit OMI_VAULT_PATH; otherwise auto-detect the user's OWN generic
+# Obsidian location (no developer path baked in); fall back to bundled demo data.
+_USER_VAULT_CANDIDATE = Path.home() / "Documents" / "Obsidian Vault"
+if os.getenv("OMI_VAULT_PATH"):
+    _DEFAULT_VAULT = Path(os.environ["OMI_VAULT_PATH"])
+elif _USER_VAULT_CANDIDATE.exists():
+    _DEFAULT_VAULT = _USER_VAULT_CANDIDATE
+else:
+    _DEFAULT_VAULT = _DEMO_VAULT
 
 OMI_VAULT_PATH = _DEFAULT_VAULT
 
@@ -182,6 +234,7 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
                     frontmatter[k] = v
 
         date_str = frontmatter.get("date", "")
+        date_from_frontmatter = bool(date_str)
         if not date_str:
             m = re.search(r"(\d{4}-\d{2}-\d{2})", path.name)
             date_str = m.group(1) if m else None
@@ -247,6 +300,18 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
         elif SLEEP_GOOD_RE.search(full_text):
             sq = "good"
 
+        parser_confidence, quality_warnings = assess_parse_quality(
+            date_str=date_str or "",
+            date_from_frontmatter=date_from_frontmatter,
+            transcript_line_count=len(transcript_lines),
+            speakers=speakers,
+            context_words=context_words,
+            signals_with_quality=signals_with_quality,
+            spoken_chars=len(spoken),
+            body_chars=len(body),
+            full_text=full_text,
+        )
+
         return {
             "path": str(path),
             "date": date_str,
@@ -257,9 +322,13 @@ def _parse_omi_file(path: Path) -> Optional[Dict[str, Any]]:
             "context_words": context_words,
             "sleep_quality": sq,
             "excerpts": dict(excerpts),
-            "snippet": (spoken[:300] + "...") if len(spoken) > 300 else spoken
+            "snippet": (spoken[:300] + "...") if len(spoken) > 300 else spoken,
+            "parser_confidence": parser_confidence,
+            "quality_warnings": quality_warnings,
+            "quality": ui_quality_band(parser_confidence),
+            "low_quality_excerpt": parser_confidence < LOW_QUALITY_THRESHOLD,
         } if date_str and signals else None
-    except Exception as e:
+    except Exception:
         return None
 
 def _omi_search_paths(vault: Path) -> List[Path]:
@@ -316,7 +385,7 @@ def _build_azure_payload(
     operation: str,
     user_consent: bool,
     anonymize: bool = True,
-    locale: str = "ru",
+    locale: str = "en",
     prompt_hint: str = "",
 ) -> Dict[str, Any]:
     manifest = _get_manifest()
@@ -374,9 +443,9 @@ def _resolve_vault() -> Path:
 
 
 def _scan_omi(limit: int = 100, tool: str = "scan_omi") -> List[Dict]:
-    assert_sidecar_active(_get_manifest())
-    vault = _resolve_vault()
     manifest = _get_manifest()
+    assert_sidecar_active(manifest)
+    vault = _resolve_vault()
     files: List[Path] = []
     for base in _omi_search_paths(vault):
         files.extend(base.rglob("*.md"))
@@ -437,10 +506,16 @@ def _entries_by_date(entries: List[Dict]) -> Dict[str, Dict]:
     return {e["date"]: e for e in entries if e.get("date")}
 
 
-def _cite_for_entry(entry: Dict[str, Any], signal: str) -> Dict[str, str]:
+def _cite_for_entry(entry: Dict[str, Any], signal: str) -> Dict[str, Any]:
     ex = entry.get("excerpts", {}).get(signal, [])
     text = ex[0]["text"] if ex else entry.get("snippet", "")
-    return {"date": entry.get("date", ""), "excerpt": text[:220]}
+    pc = assess_from_entry(entry)
+    return {
+        "date": entry.get("date", ""),
+        "excerpt": text[:220],
+        "parser_confidence": pc,
+        "low_quality_excerpt": pc < LOW_QUALITY_THRESHOLD,
+    }
 
 
 def _enrich_correlations(entries: List[Dict], temporal: List[Dict]) -> List[Dict]:
@@ -461,7 +536,13 @@ def _enrich_correlations(entries: List[Dict], temporal: List[Dict]) -> List[Dict
                 effect_entry = e
             cites.append(_cite_for_entry(effect_entry, c.get("effect", "")))
         c["citations"] = cites[:2]
-        c["confidence"] = _confidence_from_samples(len(c.get("example_dates", [])))
+        stat = _confidence_from_samples(len(c.get("example_dates", [])))
+        if cites:
+            avg_pc = sum(cite.get("parser_confidence", 0.75) for cite in cites) / len(cites)
+        else:
+            avg_pc = 0.5
+        c["parser_confidence"] = round(avg_pc, 3)
+        c["confidence"] = blend_statistical_confidence(stat, avg_pc)
     return temporal
 
 
@@ -840,7 +921,36 @@ def smart_analysis() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def get_local_narrative(locale: str = "ru") -> Dict[str, Any]:
+def get_personal_baselines(
+    metric_keys: Optional[List[str]] = None,
+    windows: Optional[List[int]] = None,
+    sync_from_journals: bool = True,
+) -> Dict[str, Any]:
+    """
+    Personal baseline bands from local SQLite longitudinal store (7/14/30d windows).
+    Syncs scoped journal entries unless sync_from_journals=false.
+    """
+    manifest = _get_manifest()
+    assert_sidecar_active(manifest, tool="get_personal_baselines")
+    entries: List[Dict] = _combined_entries(120, tool="get_personal_baselines") if sync_from_journals else []
+    fixture = Path(__file__).resolve().parent / "fixtures" / "longitudinal_metrics.json"
+    win = tuple(windows) if windows else (7, 14, 30)
+    payload = get_personal_baselines_payload(
+        entries,
+        manifest=manifest,
+        metric_keys=metric_keys,
+        windows=win,
+        fixture_path=fixture if os.getenv("VITASIDE_USE_BASELINE_FIXTURE", "0") == "1" else None,
+    )
+    payload["confidence"] = _confidence_from_samples(
+        sum(v.get("n", 0) for m in payload.get("metrics", {}).values() for v in m.values() if isinstance(v, dict))
+    )
+    audit("personal_baselines", {"db_path": payload.get("db_path"), "end_day": payload.get("end_day")})
+    return _with_gates(payload)
+
+
+@mcp.tool()
+def get_local_narrative(locale: str = "en") -> Dict[str, Any]:
     """Cite-grounded narrative from local data — no cloud required."""
     entries = _scan_omi(120, tool="get_local_narrative")
     analysis = analyze_lifestyle_patterns()
@@ -1190,7 +1300,7 @@ def azure_enhance_insight(
     user_consent: bool = False,
     anonymize: bool = True,
     prompt_hint: str = "",
-    locale: str = "ru",
+    locale: str = "en",
 ) -> Dict[str, Any]:
     """
     Optional Azure OpenAI boost over local patterns. Requires enable_azure_boost + user_consent=True.
@@ -1233,6 +1343,178 @@ def azure_share_report(
 
 
 @mcp.tool()
+def azure_embed_search(
+    user_consent: bool = False,
+    anonymize: bool = True,
+) -> Dict[str, Any]:
+    """Prototype: send embeddings for semantic search (Azure AI Search)."""
+    require_azure(_get_manifest(), "embed_search")
+    if not user_consent:
+        return _with_gates({"error": "consent_required"})
+    payload = _build_azure_payload("embed_search", True, anonymize=anonymize)
+    result = azure_embed(payload)
+    audit("azure_embed_search", {
+        "fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint"),
+        "source": result.get("source"),
+    })
+    return _with_gates({**result, "payload_fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint")})
+
+
+@mcp.tool()
+def azure_fhir_export(
+    user_consent: bool = False,
+    anonymize: bool = True,
+) -> Dict[str, Any]:
+    """Prototype: convert visit data to FHIR via Azure (or stub)."""
+    require_azure(_get_manifest(), "fhir_export")
+    if not user_consent:
+        return _with_gates({"error": "consent_required"})
+    payload = _build_azure_payload("fhir_export", True, anonymize=anonymize)
+    result = azure_fhir(payload)
+    audit("azure_fhir_export", {
+        "fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint"),
+    })
+    return _with_gates({**result, "payload_fingerprint": payload.get("data_minimization", {}).get("payload_fingerprint")})
+
+
+@mcp.tool()
+def build_visit_packet(
+    formats: Optional[List[str]] = None,
+    anonymize: bool = False,
+    include_whatif: bool = True,
+) -> Dict[str, Any]:
+    """Canonical visit prep packet (mcp-tool-surface §6). Aliases: generate_report, generate_doctor_report."""
+    manifest = _get_manifest()
+    assert_sidecar_active(manifest, tool="build_visit_packet")
+    fmts = [f.lower() for f in (formats or ["markdown"])]
+    entries = _scan_omi(120, tool="build_visit_packet")
+    fixture = Path(__file__).resolve().parent / "fixtures" / "longitudinal_metrics.json"
+    personal_baselines = get_personal_baselines_payload(
+        entries,
+        manifest=manifest,
+        fixture_path=fixture if fixture.exists() else None,
+    )
+    analysis = analyze_lifestyle_patterns()
+    by_date = _entries_by_date(entries)
+    apple_daily = parse_daily(_find_apple_export())
+    merge = merge_with_omi(by_date, apple_daily)
+    whatif = (
+        _simulate_whatif_core(
+            entries,
+            {
+                "intervention": "consistent_sleep_7_5h",
+                "duration_days": 14,
+                "target_signals": ["mood_low", "stress", "symptom_pain"],
+            },
+        )
+        if include_whatif
+        else {}
+    )
+    qs_payload = build_visit_questions(analysis, merge, whatif, analysis.get("smart_analysis"))
+    visit_date = datetime.date.today().isoformat()
+    entity_id = _visit_packet_entity_id(visit_date)
+    visits_dir = _resolve_visits_output_dir(manifest)
+    visits_dir.mkdir(parents=True, exist_ok=True)
+    summary_md = ""
+    outputs: Dict[str, str] = {}
+
+    if "markdown" in fmts:
+        summary_md = generate_doctor_report(
+            format="markdown", include_whatif=include_whatif, anonymize=anonymize
+        )
+
+    vault_note = build_obsidian_note(
+        analysis,
+        qs_payload,
+        whatif,
+        anonymized=anonymize,
+        entity_id=entity_id,
+        personal_baselines=personal_baselines,
+    )
+    vault_md_path = visits_dir / f"Visit-Prep-{visit_date}-GP.md"
+    vault_md_path.write_text(vault_note, encoding="utf-8")
+    outputs["visit_packet_md"] = str(vault_md_path)
+    if not summary_md:
+        summary_md = vault_note
+
+    if "html" in fmts:
+        generate_doctor_report(format="html", include_whatif=include_whatif, anonymize=anonymize)
+        outputs["patient_html"] = str(_SCRIPT_DIR / "out" / f"vitaside-report-{visit_date}.html")
+    if "doctor" in fmts:
+        generate_doctor_report(format="doctor", include_whatif=include_whatif, anonymize=anonymize)
+        outputs["doctor_html"] = str(_SCRIPT_DIR / "out" / f"vitaside-doctor-{visit_date}.html")
+    if "obsidian" in fmts:
+        outputs["obsidian_note"] = str(vault_md_path)
+    if "fhir" in fmts:
+        fhir_out = export_fhir_bundle(anonymize=anonymize)
+        outputs["fhir_bundle"] = str(fhir_out.get("bundle_path", ""))
+
+    included_patterns = [
+        {
+            "cause": c.get("cause"),
+            "effect": c.get("effect"),
+            "lag": c.get("lag"),
+            "lift_ratio": c.get("lift_ratio"),
+            "confidence": c.get("confidence"),
+        }
+        for c in analysis.get("temporal_correlations", [])[:5]
+    ]
+    citations: List[Dict[str, Any]] = [
+        {
+            "entity_id": PP01_PAIN_POINT_CITATION["entity_id"],
+            "source": PP01_PAIN_POINT_CITATION["source"],
+            "excerpt": PP01_PAIN_POINT_CITATION["excerpt"],
+        }
+    ]
+    for cite in personal_baselines.get("citations") or []:
+        citations.append(cite)
+    for c in analysis.get("temporal_correlations", [])[:3]:
+        for cite in (c.get("citations") or [])[:1]:
+            citations.append(cite)
+
+    confs = [c.get("confidence") for c in analysis.get("temporal_correlations", []) if c.get("confidence")]
+    baseline_ns = [
+        v.get("n", 0)
+        for m in personal_baselines.get("metrics", {}).values()
+        for v in m.values()
+        if isinstance(v, dict)
+    ]
+    confidence = round(sum(confs) / len(confs), 2) if confs else _confidence_from_samples(sum(baseline_ns))
+
+    audit(
+        "build_visit_packet",
+        {
+            "formats": fmts,
+            "questions": qs_payload.get("count", 0),
+            "visit_path": str(vault_md_path),
+            "entity_id": entity_id,
+            "db_path": personal_baselines.get("db_path"),
+        },
+    )
+    return _with_gates({
+        "visit_date": visit_date,
+        "entity_id": entity_id,
+        "summary_md": (summary_md or "")[:8000],
+        "questions": qs_payload.get("questions", []),
+        "included_patterns": included_patterns,
+        "personal_baselines": {
+            "storage": personal_baselines.get("storage"),
+            "end_day": personal_baselines.get("end_day"),
+            "windows": personal_baselines.get("windows"),
+            "metrics": personal_baselines.get("metrics"),
+            "signals": personal_baselines.get("signals"),
+            "db_path": personal_baselines.get("db_path"),
+        },
+        "outputs": outputs,
+        "anonymized": anonymize,
+        "questions_count": qs_payload.get("count", 0),
+        "confidence": confidence,
+        "citations": citations,
+        "pain_point_citations": [PP01_PAIN_POINT_CITATION],
+    })
+
+
+@mcp.tool()
 def export_visit_bundle(anonymize: bool = False) -> Dict[str, Any]:
     """Generate doctor HTML + patient HTML + Obsidian note + questions in out/."""
     generate_doctor_report(format="html", anonymize=anonymize)
@@ -1250,6 +1532,45 @@ def export_visit_bundle(anonymize: bool = False) -> Dict[str, Any]:
         "questions_count": qs.get("count", 0),
         "anonymized": anonymize,
     })
+
+
+@mcp.tool()
+def export_doctor_handoff_print(
+    visit_markdown_path: Optional[str] = None,
+    anonymize: bool = False,
+) -> Dict[str, Any]:
+    """Print-optimized HTML from visit markdown with audit footer (VIT-43)."""
+    manifest = _get_manifest()
+    assert_sidecar_active(manifest, tool="export_doctor_handoff_print")
+    pkt = build_visit_packet(formats=["markdown"], anonymize=anonymize, include_whatif=True)
+    md_path = visit_markdown_path or (pkt.get("outputs") or {}).get("visit_packet_md")
+    if not md_path or not Path(md_path).is_file():
+        raise ValueError("visit markdown not found; run build_visit_packet first")
+    visit_md = Path(md_path).read_text(encoding="utf-8")
+    scopes = [str(p) for p in allowed_roots(manifest)]
+    audit_info = audit_summary(10)
+    result = export_print_bundle_from_markdown(
+        visit_md,
+        disclaimer=DISCLAIMER,
+        confidence=float(pkt.get("confidence") or 0.5),
+        data_scopes=scopes,
+        audit_summary=audit_info,
+        entity_id=str(pkt.get("entity_id") or ""),
+        out_dir=_SCRIPT_DIR / "out",
+    )
+    audit(
+        "export_doctor_handoff_print",
+        {"print_html": result["print_html"], "entity_id": pkt.get("entity_id")},
+    )
+    return _with_gates({
+        "visit_markdown": str(md_path),
+        "outputs": {"print_html": result["print_html"]},
+        "confidence": result["confidence"],
+        "entity_id": result["entity_id"],
+        "footer_marker": result["footer_marker"],
+        "data_scopes_count": len(scopes),
+    })
+
 
 @mcp.tool()
 def combine_omi_and_apple() -> Dict[str, Any]:
@@ -1281,6 +1602,20 @@ def get_sidecar_status() -> Dict[str, Any]:
         "manifest_path": m.get("_manifest_path"),
         "audit": audit_summary(5),
     })
+
+
+@mcp.tool()
+def health_check(include_sources: bool = True) -> Dict[str, Any]:
+    """Canonical liveness + manifest TTL (alias surface: get_sidecar_status)."""
+    status = get_sidecar_status()
+    if include_sources:
+        sources = list_data_sources()
+        status["connected_sources"] = sources.get("summary", sources.get("connected_sources", {}))
+        status["data_mode"] = "local"
+        status["vault_path"] = str(_resolve_vault())
+    audit("health_check", {"expired": status.get("expired"), "revoked": status.get("revoked")})
+    return status
+
 
 @mcp.tool()
 def list_journals() -> Dict[str, Any]:
@@ -1353,7 +1688,7 @@ def list_data_sources() -> Dict[str, Any]:
     snapshot["supported_signals"] = list(SIGNAL_PATTERNS.keys())
     snapshot["sidecar"] = manifest.get("name")
     snapshot["parser_features"] = [
-        "context words", "speaker separation", "quality scoring", "signal excerpts/citations",
+        "context words", "speaker separation", "quality scoring", "parser confidence in citations",
         "time-of-day", "lag correlations", "what-if simulation", "audit log", "sidecar manifest",
         "omi-apple daily merge", "doctor view export", "condition tracking packs",
             "personal baseline bands", "weekday effects", "attention-now alerts",

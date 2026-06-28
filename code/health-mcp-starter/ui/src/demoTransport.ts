@@ -87,8 +87,9 @@ function apiUrl(input: RequestInfo | URL): string | null {
 export function installDemoTransport() {
   if (installed) return;
   installed = true;
+  const envLock = (import.meta.env as { VITE_DEMO_LOCK?: string }).VITE_DEMO_LOCK === "true";
   try {
-    if (localStorage.getItem(LS_KEY) === "1") {
+    if (envLock || localStorage.getItem(LS_KEY) === "1") {
       forceDemo = true;
       demoMode = true;
     }

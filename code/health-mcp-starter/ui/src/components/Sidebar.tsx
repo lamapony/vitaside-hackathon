@@ -1,4 +1,5 @@
 import * as I from "lucide-react";
+import { openDemoGuide } from "./DemoGuide";
 
 export type TabId =
   | "dashboard"
@@ -95,7 +96,10 @@ export function Sidebar({ active, onChange, pendingSuggestions = 0, displayName 
       </nav>
 
       <div className="sidebar-footnote">
-        Data stays on your Mac · sidecar audit · no cloud by default
+        <button type="button" className="demo-tour-link" onClick={openDemoGuide}>
+          <I.MapPin size={13} /> Demo tour — what to look at
+        </button>
+        <span>Data stays on your Mac · sidecar audit · no cloud by default</span>
       </div>
     </aside>
   );

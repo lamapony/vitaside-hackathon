@@ -1,6 +1,7 @@
 import { Briefing, NextStep, Sidecar, UserContext } from "../api";
 import { NextStepsPanel } from "../components/NextStepsPanel";
 import { WelcomeHero } from "../components/WelcomeHero";
+import { DemoGuide } from "../components/DemoGuide";
 import type { TabId } from "../components/Sidebar";
 import { ArrowRight, Lightbulb, User } from "lucide-react";
 
@@ -34,6 +35,7 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
 
   return (
     <section className="dashboard-page fade-in">
+      <DemoGuide onNavigate={onNavigate} />
       <WelcomeHero
         briefing={briefing}
         sidecar={sidecar}

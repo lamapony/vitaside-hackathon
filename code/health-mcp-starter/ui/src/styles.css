@@ -1718,3 +1718,39 @@ h1, h2, h3 { letter-spacing: 0; }
 @keyframes voicepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .voice-stop { background: var(--error); border-color: var(--error); }
 .voice-notice { margin-top: var(--space-3); color: var(--ink-3); }
+
+/* Demo guide — judges' quick tour */
+.demo-guide {
+  margin-bottom: var(--space-8);
+  padding: var(--space-6) var(--space-7);
+  border-radius: var(--radius-xl);
+  border: 1px solid #c9dfd8;
+  background: #eef7f3;
+}
+.demo-guide-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-3); }
+.demo-guide-head h2 { margin: 4px 0 0; font-size: 20px; }
+.demo-guide-close {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  min-height: 32px; padding: 4px 12px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: var(--radius);
+}
+.demo-guide-close:hover { background: var(--surface-2); }
+.demo-guide-intro { margin: 0 0 var(--space-5); color: var(--ink-2); font-size: 14px; max-width: 60ch; }
+.demo-guide-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-4); }
+.demo-guide-step { display: flex; gap: var(--space-4); align-items: flex-start; }
+.demo-guide-num {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  background: var(--accent); color: white; display: grid; place-items: center;
+  font-size: 13px; font-weight: 700;
+}
+.demo-guide-body { flex: 1; min-width: 0; }
+.demo-guide-body strong { font-size: 14px; }
+.demo-guide-body p { margin: 2px 0 var(--space-2); color: var(--ink-2); font-size: 13px; line-height: 1.55; }
+
+.sidebar-footnote { display: flex; flex-direction: column; gap: var(--space-2); }
+.demo-tour-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 0; color: var(--accent); font-size: 12px; font-weight: 600;
+  padding: 0; cursor: pointer; align-self: flex-start;
+}
+.demo-tour-link:hover { text-decoration: underline; }

@@ -51,7 +51,7 @@ function DemoStatusStrip({ active, forced }: { active: boolean; forced: boolean 
     <div className="demo-strip sample" role="status">
       <span className="demo-dot" />
       <span className="demo-label">
-        {forced ? "Sample data (locked for demo)" : "Sample data — live API not reachable"}
+        {forced ? "Sample data · demo presentation" : "Sample data — live API not reachable"}
       </span>
       <button
         type="button"

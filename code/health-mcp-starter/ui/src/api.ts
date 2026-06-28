@@ -367,6 +367,22 @@ export function signalLabel(signal: string): string {
   return labels[signal] ?? signal.replace(/_/g, " ");
 }
 
+export type MultiSourceItem = {
+  id: string;
+  label: string;
+  status: string;
+  events: number;
+  proactive?: boolean;
+};
+
+export type MultiSourceResponse = {
+  sources: MultiSourceItem[];
+  total_events?: number;
+  doctor_device_active?: boolean;
+  local?: boolean;
+  disclaimer?: string;
+};
+
 export async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {

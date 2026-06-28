@@ -2,6 +2,7 @@ import { Briefing, NextStep, Sidecar, UserContext } from "../api";
 import { NextStepsPanel } from "../components/NextStepsPanel";
 import { WelcomeHero } from "../components/WelcomeHero";
 import { DemoGuide } from "../components/DemoGuide";
+import { ConnectedSources } from "../components/ConnectedSources";
 import type { TabId } from "../components/Sidebar";
 import { ArrowRight, Lightbulb, User } from "lucide-react";
 
@@ -43,6 +44,8 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
         nextStep={primaryStep}
         onPrimaryAction={primaryStep ? () => onNavigate(primaryStep.tab as TabId) : undefined}
       />
+
+      <ConnectedSources />
 
       {isNewUser && (
         <div className="onboarding-banner">

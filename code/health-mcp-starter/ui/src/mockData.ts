@@ -29,6 +29,7 @@ import type {
   Narrative,
   ClinicalSummary,
   N1Compare,
+  MultiSourceResponse,
 } from "./api";
 
 export const DISCLAIMER =
@@ -384,6 +385,22 @@ export function mockClinicalSummary(): ClinicalSummary {
   };
 }
 
+export function mockMultiSource(): MultiSourceResponse {
+  return {
+    sources: [
+      { id: "notes", label: "Obsidian notes", status: "connected", events: 90, proactive: false },
+      { id: "agent", label: "Agent (Hermes)", status: "connected", events: 1, proactive: false },
+      { id: "wearables", label: "Wearables (Apple Health)", status: "connected", events: 2, proactive: false },
+      { id: "omi", label: "Omi voice transcripts", status: "connected", events: 1, proactive: false },
+      { id: "doctor_device", label: "Doctor-prescribed device", status: "connected", events: 2, proactive: true },
+    ],
+    total_events: 96,
+    doctor_device_active: true,
+    local: true,
+    disclaimer: "All sources processed locally. Doctor-device collection is temporary and manifest-gated.",
+  };
+}
+
 export function mockDataSources(): DataSourcesResponse {
   return {
     summary: {
@@ -603,6 +620,7 @@ export function mockFor(method: string, url: string, body?: BodyInit | null | un
         case "/api/narrative": return mockNarrative();
         case "/api/clinical-summary": return mockClinicalSummary();
         case "/api/data-sources": return mockDataSources();
+        case "/api/multi-source": return mockMultiSource();
         case "/api/azure-contract": return mockAzureContract();
         case "/api/preview-azure": return mockPreviewAzure();
         case "/api/context-suggestions": return mockContextSuggestions();

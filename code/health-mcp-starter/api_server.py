@@ -474,6 +474,57 @@ async def analyze_skin_photo_api(
         except Exception:  # noqa: BLE001
             pass
 
+@app.get("/api/multi-source")
+def multi_source() -> Dict[str, Any]:
+    """Multi-source collector: notes + agent + wearables + omi + doctor_device.
+
+    Unified, local-first collection. The doctor_device source is the innovation:
+    a doctor-prescribed temporary sensor with a proactive agent collection window.
+    """
+    try:
+        from multi_source_collector import MultiSourceCollector
+        vault = os.environ.get("OMI_VAULT_PATH", str(ROOT / "demo-data" / "vault"))
+        sources = ["notes", "agent", "wearables", "omi", "doctor_device"]
+        col = MultiSourceCollector(vault, sources)
+        events = col.collect_all()
+        counts: Dict[str, int] = {}
+        for e in events:
+            counts[e.source] = counts.get(e.source, 0) + 1
+        keymap = {"notes": "obsidian", "agent": "agent_hermes", "wearables": "apple_health", "omi": "omi", "doctor_device": "doctor_device"}
+        labels = {
+            "obsidian": "Obsidian notes",
+            "agent_hermes": "Agent (Hermes)",
+            "apple_health": "Wearables (Apple Health)",
+            "omi": "Omi voice transcripts",
+            "doctor_device": "Doctor-prescribed device",
+        }
+        # Real notes count from the actual vault scan (collector stub is a placeholder).
+        try:
+            notes_count = len(vita._scan_omi(120, tool="multi_source"))
+        except Exception:
+            notes_count = counts.get("obsidian", 0)
+        src_list = []
+        for s in sources:
+            key = keymap.get(s, s)
+            ev = notes_count if s == "notes" else counts.get(key, 0)
+            src_list.append({
+                "id": s,
+                "label": labels.get(key, s),
+                "status": "connected",
+                "events": ev,
+                "proactive": s == "doctor_device",
+            })
+        return {
+            "sources": src_list,
+            "total_events": len(events),
+            "doctor_device_active": counts.get("doctor_device", 0) > 0,
+            "local": True,
+            "disclaimer": "All sources processed locally. Doctor-device collection is temporary and manifest-gated.",
+        }
+    except Exception as exc:  # API boundary
+        return {"error": "multi_source_failed", "message": str(exc), "sources": [], "total_events": 0}
+
+
 if __name__ == "__main__":
     import uvicorn  # type: ignore[import-not-found]
 

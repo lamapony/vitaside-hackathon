@@ -26,6 +26,7 @@ import { MyContext } from "./pages/MyContext";
 import { DataSources } from "./pages/DataSources";
 import { Smart } from "./pages/Smart";
 import { SidecarPage } from "./pages/Sidecar";
+import { Capture } from "./pages/Capture";
 
 function DemoStatusStrip({ active, forced }: { active: boolean; forced: boolean }) {
   if (!active && !forced) {
@@ -257,11 +258,16 @@ export default function App() {
           {loading && tab === "dashboard" && <DashboardSkeleton />}
           {loading && tab !== "dashboard" && <Loading label="Loading your data…" />}
           {fatalError && <ErrorBox message={fatalError} />}
-          {error && <ErrorBox message={error} />}
+          {error && (tab === "condition" || tab === "datasources" || tab === "smart") && (
+            <div className="notice-box" role="status">
+              <strong>Part of this page didn't load</strong>
+              <p>{error}</p>
+            </div>
+          )}
           {!loading && !fatalError && partialErrors.length > 0 && (
             <PartialErrorBanner endpoints={partialErrors} />
           )}
-          {!loading && !fatalError && !error && tab === "dashboard" && (
+          {!loading && !fatalError && tab === "dashboard" && (
             <Dashboard
               briefing={briefing}
               sidecar={sidecar}
@@ -271,21 +277,21 @@ export default function App() {
               onNavigate={setTab}
             />
           )}
-          {!loading && !fatalError && !error && tab === "context" && (
+          {!loading && !fatalError && tab === "context" && (
             <MyContext
               context={userContext}
               onContextChange={handleContextChange}
               onSuggestionsApplied={refreshNextSteps}
             />
           )}
-          {!loading && !fatalError && !error && tab === "timeline" && (
+          {!loading && !fatalError && tab === "timeline" && (
             <TimelinePage
               entries={timeline?.entries ?? []}
               activeSignal={activeSignal}
               setActiveSignal={setActiveSignal}
             />
           )}
-          {!loading && !fatalError && !error && tab === "condition" && (
+          {!loading && !fatalError && tab === "condition" && (
             <Condition
               packs={packs}
               selected={selectedPack}
@@ -293,17 +299,20 @@ export default function App() {
               report={condition}
             />
           )}
-          {!loading && !fatalError && !error && tab === "doctor" && (
+          {!loading && !fatalError && tab === "doctor" && (
             <DoctorHandoff questions={questions} context={userContext} />
           )}
-          {!loading && !fatalError && !error && tab === "datasources" && (
+          {!loading && !fatalError && tab === "datasources" && (
             wave2Loading && !dataSources ? <Loading /> : <DataSources data={dataSources} />
           )}
-          {!loading && !fatalError && !error && tab === "smart" && (
+          {!loading && !fatalError && tab === "smart" && (
             wave2Loading && !smart ? <Loading /> : <Smart smart={smart} narrative={narrative} />
           )}
-          {!loading && !fatalError && !error && tab === "sidecar" && (
+          {!loading && !fatalError && tab === "sidecar" && (
             <SidecarPage sidecar={sidecar} />
+          )}
+          {!loading && !fatalError && tab === "capture" && (
+            <Capture onContextChange={handleContextChange} />
           )}
         </main>
 

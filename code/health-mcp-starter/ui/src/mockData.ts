@@ -249,6 +249,13 @@ export function mockSidecar(): Sidecar {
     audit: {
       entries: 128,
       tools_used: { analyze_lifestyle_patterns: 14, build_visit_packet: 3, list_data_sources: 8 },
+      recent: [
+        { ts: "2026-06-28T10:59:48+00:00", event: "scoped_read", tool: "analyze_lifestyle_patterns", scoped: true, count: 36 },
+        { ts: "2026-06-28T10:58:12+00:00", event: "build_visit_packet", tool: "build_visit_packet", scoped: true, count: 9 },
+        { ts: "2026-06-28T10:57:03+00:00", event: "scoped_read", tool: "list_data_sources", scoped: true, count: 4 },
+        { ts: "2026-06-28T10:55:21+00:00", event: "scoped_read", tool: "smart_analysis", scoped: true, count: 36 },
+        { ts: "2026-06-28T10:54:09+00:00", event: "report_export", tool: "generate_doctor_report", scoped: true, count: 1 },
+      ],
     },
   };
 }

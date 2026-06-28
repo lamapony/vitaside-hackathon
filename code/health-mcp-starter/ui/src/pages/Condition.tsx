@@ -7,6 +7,19 @@ type Props = {
   report?: ConditionReport;
 };
 
+function humanize(s: string): string {
+  const known: Record<string, string> = {
+    avg_intensity: "Average intensity",
+    duration_h: "Duration (h)",
+    days_free: "Days free",
+    symptom_pain: "Pain / symptom",
+    headache: "Headache",
+    episodes: "Episodes",
+    med_response: "Med response",
+  };
+  return known[s] ?? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function Condition({ packs, selected, setSelected, report }: Props) {
   return (
     <section>
@@ -29,7 +42,7 @@ export function Condition({ packs, selected, setSelected, report }: Props) {
       {report && (
         <div className="condition-layout">
           <div className="soft-card">
-            <p className="eyebrow">{report.condition_id}</p>
+            <p className="eyebrow">Condition pack</p>
             <h2>{report.condition_name}</h2>
             <p>{report.days_analyzed} days analyzed. Patterns only — not diagnosis.</p>
           </div>
@@ -57,7 +70,7 @@ export function Condition({ packs, selected, setSelected, report }: Props) {
               {report.metrics.map((metric) => (
                 <div className="metric-card" key={metric.id}>
                   <strong>{metric.value ?? "—"} {metric.unit ?? ""}</strong>
-                  <span>{metric.id}</span>
+                  <span>{humanize(metric.id)}</span>
                   {metric.note && <p>{metric.note}</p>}
                 </div>
               ))}
@@ -74,13 +87,19 @@ export function Condition({ packs, selected, setSelected, report }: Props) {
                 <h3>Evidence snippets</h3>
                 {report.citations.slice(0, 4).map((citation) => (
                   <blockquote key={`${citation.date}-${citation.signal}`}>
-                    <small>{citation.date} · {citation.signal}</small>
+                    <small>{citation.date} · {humanize(citation.signal)}</small>
                     {citation.excerpt}
                   </blockquote>
                 ))}
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {!report && (
+        <div className="soft-card">
+          <p className="meta">Loading condition report…</p>
         </div>
       )}
 

@@ -47,6 +47,16 @@ export type Timeline = {
   disclaimer?: string;
 };
 
+export type AuditEvent = {
+  ts?: string;
+  event?: string;
+  tool?: string;
+  scoped?: boolean;
+  count?: number;
+  files?: string[];
+  vault?: string;
+};
+
 export type Sidecar = {
   name?: string;
   issuer?: string;
@@ -55,7 +65,7 @@ export type Sidecar = {
   revoked?: boolean;
   allowed_scopes?: { path: string; permissions: string[] }[];
   tools?: string[];
-  audit?: { entries?: number; tools_used?: Record<string, number> };
+  audit?: { entries?: number; tools_used?: Record<string, number>; recent?: AuditEvent[] };
 };
 
 export type ConditionPack = {
@@ -302,6 +312,10 @@ export type ClinicalTrend = {
   prior_freq?: number;
   period?: string;
   detail?: string;
+  recent_14d?: number;
+  prior_14d?: number;
+  delta?: number;
+  unit?: string;
 };
 
 export type ClinicalSummary = {

@@ -7,7 +7,7 @@
  * Roadmap: Phase 3 — "PDF export (print CSS or weasyprint)". Pure frontend,
  * no backend dependency, works in demo mode too.
  */
-import type { ClinicalSummary, Questions, UserContextProfile } from "../api";
+import type { ClinicalSummary, Questions, UserContext, UserContextProfile } from "../api";
 
 const DISCLAIMER =
   "Personal lifestyle patterns only — not a medical diagnosis. Always discuss these observations with a qualified clinician.";
@@ -19,15 +19,16 @@ type Props = {
   className?: string;
   visitDate: string;
   profile?: UserContextProfile;
+  context?: UserContext;
   clinicalSummary?: ClinicalSummary | null;
   questions?: Questions;
 };
 
-function dirArrow(dir?: string): string {
-  if (dir === "up") return "↑";
-  if (dir === "down") return "↓";
-  if (dir === "stable") return "→";
-  return "";
+function directionWord(dir?: string): string {
+  if (dir === "up") return "Increasing";
+  if (dir === "down") return "Decreasing";
+  if (dir === "stable") return "Stable";
+  return "—";
 }
 
 function pct(v?: number): string {
@@ -36,10 +37,27 @@ function pct(v?: number): string {
   return `${sign}${Math.round(v * 100)}%`;
 }
 
-export function PrintPacket({ className, visitDate, profile, clinicalSummary, questions }: Props) {
+function humanizeLabel(s: string): string {
+  const known: Record<string, string> = {
+    stress: "Stress",
+    mood_low: "Low mood",
+    mood_good: "Good mood",
+    sleep: "Sleep",
+    sleep_quality: "Sleep quality",
+    symptom_pain: "Pain / symptom",
+    headache: "Headache",
+  };
+  return known[s] ?? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function PrintPacket({ className, visitDate, profile, context, clinicalSummary, questions }: Props) {
   const trends = clinicalSummary?.trends ?? [];
   const qs = questions?.questions ?? [];
   const name = profile?.display_name ?? "Patient";
+  const conditions = (context?.conditions ?? []).map((c) => c.name ?? c.id).filter(Boolean);
+  const medications = (context?.medications ?? [])
+    .map((m) => `${m.name ?? m.id}${m.dose ? ` ${m.dose}` : ""}`)
+    .filter(Boolean);
 
   return (
     <article className={`print-packet${className ? " " + className : ""}`}>
@@ -51,9 +69,20 @@ export function PrintPacket({ className, visitDate, profile, clinicalSummary, qu
         </div>
         <div className="pp-conf">
           <span className="pp-conf-label">Confidence</span>
-          <span className="pp-conf-value">moderate (N-of-1)</span>
+          <span className="pp-conf-value">Exploratory · N-of-1</span>
         </div>
       </header>
+
+      <section className="pp-section">
+        <h2 className="pp-h2">Patient context</h2>
+        <p className="pp-small">
+          {name}{profile?.age ? ` · ${profile.age}` : ""}{profile?.timezone ? ` · ${profile.timezone}` : ""}
+        </p>
+        {profile?.main_goal && <p className="pp-small"><strong>Goal:</strong> {profile.main_goal}</p>}
+        {conditions.length > 0 && <p className="pp-small"><strong>Conditions:</strong> {conditions.join(", ")}</p>}
+        {medications.length > 0 && <p className="pp-small"><strong>Medications:</strong> {medications.join(", ")}</p>}
+        {profile?.doctor_notes && <p className="pp-small"><strong>Notes for clinician:</strong> {profile.doctor_notes}</p>}
+      </section>
 
       <section className="pp-section">
         <h2 className="pp-h2">Clinical summary</h2>
@@ -72,21 +101,27 @@ export function PrintPacket({ className, visitDate, profile, clinicalSummary, qu
               <tr>
                 <th>Signal</th>
                 <th>Direction</th>
-                <th>14d</th>
-                <th>90d</th>
+                <th>Δ 14d</th>
+                <th>Recent / prior</th>
                 <th>Notes</th>
               </tr>
             </thead>
             <tbody>
-              {trends.map((t, i) => (
-                <tr key={`${t.signal ?? t.label}-${i}`}>
-                  <td>{t.label ?? t.signal?.replace(/_/g, " ") ?? "—"}</td>
-                  <td className="pp-center">{dirArrow(t.direction)} {t.direction ?? "—"}</td>
-                  <td className="pp-center">{t.delta_14d != null ? pct(t.delta_14d) : "—"}</td>
-                  <td className="pp-center">{t.delta_90d != null ? pct(t.delta_90d) : "—"}</td>
-                  <td className="pp-small">{t.detail ?? ""}</td>
-                </tr>
-              ))}
+              {trends.map((t, i) => {
+                const delta14 = t.delta ?? t.delta_14d;
+                const recent = t.recent_14d ?? t.recent_freq;
+                const prior = t.prior_14d ?? t.prior_freq;
+                const label = t.label ?? t.signal ?? "—";
+                return (
+                  <tr key={`${label}-${i}`}>
+                    <td>{humanizeLabel(label)}</td>
+                    <td className="pp-center">{directionWord(t.direction)}</td>
+                    <td className="pp-center">{delta14 != null ? pct(delta14) : "—"}</td>
+                    <td className="pp-center">{recent != null && prior != null ? `${Math.round(recent * 100)}% / ${Math.round(prior * 100)}%` : "—"}</td>
+                    <td className="pp-small">{t.detail ?? (t.unit ? t.unit : "")}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -99,7 +134,7 @@ export function PrintPacket({ className, visitDate, profile, clinicalSummary, qu
             {qs.map((q, i) => (
               <li key={i} className="pp-q">
                 <div className="pp-q-text">{q.question}</div>
-                {q.evidence && <div className="pp-q-evidence">Evidence: {q.evidence}</div>}
+                {q.evidence && <div className="pp-q-evidence">{q.evidence}</div>}
               </li>
             ))}
           </ol>

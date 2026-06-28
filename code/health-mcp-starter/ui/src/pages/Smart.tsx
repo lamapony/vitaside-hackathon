@@ -15,6 +15,17 @@ type Props = {
   narrative?: Narrative;
 };
 
+function humanizeTrend(t: string): string {
+  const known: Record<string, string> = {
+    slight_down: "trending down",
+    slight_up: "trending up",
+    up: "increasing",
+    down: "decreasing",
+    stable: "stable",
+  };
+  return known[t] ?? t.replace(/_/g, " ");
+}
+
 export function Smart({ smart, narrative }: Props) {
   const attention = smart?.attention_now ?? [];
   const weekdayEffects = smart?.weekday_effects ?? [];
@@ -123,9 +134,9 @@ export function Smart({ smart, narrative }: Props) {
             {weekdayEffects.slice(0, 6).map((effect) => (
               <div className="weekday-row" key={`${effect.signal}-${effect.weekday}`}>
                 <div>
-                  <strong>{effect.signal.replace(/_/g, " ")}</strong>
+                  <strong>{signalLabel(effect.signal)}</strong>
                   <span>
-                    {effect.weekday_name ?? effect.weekday_name_ru} · {effect.lift.toFixed(1)}× lift
+                    {effect.weekday_name ?? "—"} · {effect.lift.toFixed(1)}× lift
                   </span>
                 </div>
                 <div className="bar-track">
@@ -147,10 +158,10 @@ export function Smart({ smart, narrative }: Props) {
             {baselineEntries.map(([signal, baseline]) => (
               <div className="bar-row" key={signal}>
                 <div>
-                  <span>{signal.replace(/_/g, " ")}</span>
+                  <span>{signalLabel(signal)}</span>
                   <strong>
                     {Math.round(baseline.mean_freq * 100)}%
-                    {baseline.trend && baseline.trend !== "insufficient_data" ? ` · ${baseline.trend}` : ""}
+                    {baseline.trend && baseline.trend !== "insufficient_data" ? ` · ${humanizeTrend(baseline.trend)}` : ""}
                   </strong>
                 </div>
                 <div className="bar-track">
@@ -197,7 +208,7 @@ function buildRegimeCards(smart?: SmartAnalysis) {
       label: "Rhythm",
       title: weekday.length ? "Weekday pattern detected" : "No strong weekday rhythm",
       detail: weekday.length
-        ? `${weekday[0].weekday_name ?? weekday[0].weekday_name_ru} has the strongest ${weekday[0].signal.replace(/_/g, " ")} lift.`
+        ? `${weekday[0].weekday_name ?? "—"} has the strongest ${signalLabel(weekday[0].signal)} lift.`
         : "No weekday effect is strong enough to highlight yet.",
       tone: weekday.length ? "watch" : "neutral"
     },
@@ -278,7 +289,7 @@ function N1CompareCard() {
       {loading && <div className="meta">Comparing periods…</div>}
 
       {!loading && error && (
-        <div className="meta">N-of-1 compare unavailable ({error}). Backend endpoint may still be loading.</div>
+        <div className="meta">Comparison unavailable. Add more tracked days or try again later.</div>
       )}
 
       {!loading && !error && compare && (

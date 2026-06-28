@@ -30,7 +30,7 @@ export function NextStepsPanel({ steps, onNavigate }: Props) {
       <div className="card-header">
         <div>
           <p className="eyebrow">Next steps</p>
-          <div className="card-title">Focus this week</div>
+          <div className="card-title">Recommended next steps</div>
         </div>
       </div>
 

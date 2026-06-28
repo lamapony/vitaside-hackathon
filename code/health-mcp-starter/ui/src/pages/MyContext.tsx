@@ -26,6 +26,17 @@ const blankProfile: UserContextProfile = {
   doctor_notes: ""
 };
 
+function sourceLabel(s?: string): string {
+  if (s === "records") return "Auto-detected";
+  if (s === "manual") return "Manual entry";
+  return s ?? "Manual entry";
+}
+
+function titleCase(s?: string): string {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function MyContext({ context, onContextChange, onSuggestionsApplied }: Props) {
   const [section, setSection] = useState<Section>("profile");
   const [profile, setProfile] = useState<UserContextProfile>(context?.profile ?? blankProfile);
@@ -195,8 +206,8 @@ export function MyContext({ context, onContextChange, onSuggestionsApplied }: Pr
               {(context?.manual_logs ?? []).slice(0, 10).map((item) => (
                 <article className="manual-log" key={item.id ?? item.text}>
                   <div className="log-head">
-                    <strong>{item.date} · {item.type}</strong>
-                    <span className={`source-tag ${item.source === "records" ? "auto" : "manual"}`}>{item.source ?? "manual"}</span>
+                    <strong>{item.date} · {titleCase(item.type)}</strong>
+                    <span className={`source-tag ${item.source === "records" ? "auto" : "manual"}`}>{sourceLabel(item.source)}</span>
                   </div>
                   <p>{item.text}</p>
                 </article>
@@ -253,7 +264,7 @@ function ListEditor({
                 setItems(next);
               }} />
             ))}
-            <span className={`source-tag ${item.source === "records" ? "auto" : "manual"}`}>{item.source ?? "manual"}</span>
+            <span className={`source-tag ${item.source === "records" ? "auto" : "manual"}`}>{sourceLabel(item.source)}</span>
             <button className="secondary" onClick={() => setItems(items.filter((_, i) => i !== index))}>Remove</button>
           </div>
         ))}
@@ -286,7 +297,7 @@ function Area({ label, value, placeholder, onChange }: { label: string; value: s
 
 function SourceHint({ source }: { source?: string }) {
   if (!source) return null;
-  return <p className="source-hint">Main goal source: <strong>{source}</strong></p>;
+  return <p className="source-hint">Main goal source: <strong>{sourceLabel(source)}</strong></p>;
 }
 
 async function put<T>(url: string, body: unknown): Promise<T> {

@@ -20,17 +20,45 @@ type AzureContract = {
   allowed_operations?: string[];
 };
 
+type AzureDataMin = {
+  payload_fingerprint?: string;
+  raw_transcripts?: boolean;
+  vault_paths?: boolean;
+  anonymized?: boolean;
+  max_excerpt_chars?: number;
+  forbidden_categories?: string[];
+};
+
 type AzurePreview = {
   operation?: string;
-  payload?: { summary?: string; confidence?: number; signals?: string[] };
-  data_minimization?: { payload_fingerprint?: string; forbidden_categories?: string[] };
   note?: string;
+  payload?: {
+    contract_version?: string;
+    summary?: string;
+    local_summary?: { days_analyzed?: number; files_scanned?: number };
+    data_minimization?: AzureDataMin;
+    consent?: { operation?: string };
+  };
+  data_minimization?: AzureDataMin;
 };
 
 type Props = {
   questions?: Questions;
   context?: UserContext;
 };
+
+function humanizeSignal(s: string): string {
+  const known: Record<string, string> = {
+    stress: "Stress",
+    mood_low: "Low mood",
+    mood_good: "Good mood",
+    sleep: "Sleep",
+    sleep_quality: "Sleep quality",
+    symptom_pain: "Pain / symptom",
+    headache: "Headache",
+  };
+  return known[s] ?? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export function DoctorHandoff({ questions, context }: Props) {
   const [anonymize, setAnonymize] = useState(false);
@@ -107,30 +135,30 @@ export function DoctorHandoff({ questions, context }: Props) {
             <div className="clinical-trends">
               <p className="eyebrow" style={{ marginBottom: 12 }}>Trends</p>
               <div className="trend-list">
-                {clinicalSummary.trends.map((trend, index) => (
-                  <div className="trend-row" key={`${trend.signal ?? trend.label}-${index}`}>
-                    <div className="trend-label">
-                      <strong>{trend.label ?? trend.signal?.replace(/_/g, " ") ?? "Signal"}</strong>
-                      {trend.period && <span className="meta">{trend.period}</span>}
+                {clinicalSummary.trends.map((trend, index) => {
+                  const delta14 = trend.delta ?? trend.delta_14d;
+                  const recent = trend.recent_14d ?? trend.recent_freq;
+                  const prior = trend.prior_14d ?? trend.prior_freq;
+                  const label = trend.label ?? trend.signal ?? "Signal";
+                  const arrow = trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : trend.direction === "stable" ? "→" : "";
+                  return (
+                    <div className="trend-row" key={`${label}-${index}`}>
+                      <div className="trend-label">
+                        <strong>{humanizeSignal(label)}</strong>
+                        <span className="meta">14d vs prior</span>
+                      </div>
+                      <div className="trend-values">
+                        {delta14 != null && (
+                          <span className="trend-delta">{arrow} {delta14 >= 0 ? "+" : ""}{Math.round(delta14 * 100)}%</span>
+                        )}
+                        {recent != null && prior != null && (
+                          <span className="meta">{Math.round(recent * 100)}% recent · {Math.round(prior * 100)}% prior</span>
+                        )}
+                      </div>
+                      {trend.detail && <div className="meta">{trend.detail}</div>}
                     </div>
-                    <div className="trend-values">
-                      {trend.delta_14d != null && (
-                        <span className={`trend-delta ${trend.delta_14d >= 0 ? "up" : "down"}`}>
-                          14d {trend.delta_14d >= 0 ? "+" : ""}{Math.round(trend.delta_14d * 100)}%
-                        </span>
-                      )}
-                      {trend.delta_90d != null && (
-                        <span className={`trend-delta ${trend.delta_90d >= 0 ? "up" : "down"}`}>
-                          90d {trend.delta_90d >= 0 ? "+" : ""}{Math.round(trend.delta_90d * 100)}%
-                        </span>
-                      )}
-                      {trend.direction && trend.delta_14d == null && trend.delta_90d == null && (
-                        <span className={`trend-delta ${trend.direction}`}>{trend.direction}</span>
-                      )}
-                    </div>
-                    {trend.detail && <div className="meta">{trend.detail}</div>}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -143,14 +171,14 @@ export function DoctorHandoff({ questions, context }: Props) {
           <UserCheck size={18} />
         </div>
         {questions?.questions?.length ? (
-          <ul style={{ paddingLeft: 20, margin: 0 }}>
+          <ol className="question-list">
             {questions.questions.slice(0, 7).map((q, i) => (
-              <li key={i} style={{ marginBottom: 10, lineHeight: 1.5 }}>
-                {q.question}
-                {q.evidence && <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>— {q.evidence}</div>}
+              <li key={i}>
+                <div>{q.question}</div>
+                {q.evidence && <div className="question-evidence">{q.evidence}</div>}
               </li>
             ))}
-          </ul>
+          </ol>
         ) : (
           <div className="meta">No questions yet. Add context or daily notes for better preparation.</div>
         )}
@@ -162,26 +190,28 @@ export function DoctorHandoff({ questions, context }: Props) {
             <div className="card-title">Export for your visit</div>
             <Download size={18} />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 14 }}>
-            <input 
-              type="checkbox" 
-              checked={anonymize} 
-              onChange={e => setAnonymize(e.target.checked)} 
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={anonymize}
+              onChange={e => setAnonymize(e.target.checked)}
             />
             Anonymize personal excerpts
           </label>
-          <button className="primary" onClick={generateBundle} disabled={busy}>
-            {busy ? "Preparing documents..." : "Generate patient summary + doctor report"}
-          </button>
-          <button className="secondary" onClick={() => window.print()} style={{ marginTop: 10 }}>
-            <Printer size={16} /> Print / Save as PDF
-          </button>
+          <div className="button-stack">
+            <button className="primary" onClick={generateBundle} disabled={busy}>
+              {busy ? "Preparing documents..." : "Generate patient summary + doctor report"}
+            </button>
+            <button className="secondary" onClick={() => window.print()}>
+              <Printer size={16} /> Print / Save as PDF
+            </button>
+          </div>
 
           {exportResult && (
-            <div style={{ marginTop: 16, fontSize: 13 }}>
-              <div style={{ color: 'var(--success)', marginBottom: 6 }}>Documents ready in <code>out/</code></div>
+            <div className="export-result">
+              <div className="ok">Documents ready in <code>out/</code></div>
               {exportResult.outputs && Object.entries(exportResult.outputs).map(([k, v]) => (
-                <div key={k} style={{ margin: '3px 0' }}>• {k}: <code>{v}</code></div>
+                <div key={k} className="line">• {k}: <code>{v}</code></div>
               ))}
             </div>
           )}
@@ -192,43 +222,53 @@ export function DoctorHandoff({ questions, context }: Props) {
             <div className="card-title">Optional enrichment (Azure)</div>
             <Share2 size={18} />
           </div>
-          <p style={{ color: 'var(--ink-2)', fontSize: 14, lineHeight: 1.5 }}>
+          <p className="card-lede">
             Send a heavily minimized payload (no raw notes) for richer narrative or a shareable link. Only with your explicit consent.
           </p>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          <div className="button-row">
             <button className="secondary" onClick={previewAzure}>Preview what is sent</button>
             <button className="primary" onClick={shareAzure} disabled={busy}>Share minimized summary</button>
           </div>
 
           {azureContract && (
-            <div className="meta" style={{ marginTop: 12 }}>
+            <div className="meta meta-block">
               Mode: {azureContract.mode || 'stub'} • Enabled: {String(azureContract.azure_enabled)}
             </div>
           )}
           {azurePreview && (
-            <div className="meta" style={{ marginTop: 10, lineHeight: 1.6 }}>
-              {azurePreview.data_minimization?.payload_fingerprint && (
-                <div>Payload fingerprint: <code>{azurePreview.data_minimization.payload_fingerprint}</code></div>
-              )}
-              {azurePreview.data_minimization?.forbidden_categories?.length ? (
-                <div>Forbidden: {azurePreview.data_minimization.forbidden_categories.join(", ")}</div>
-              ) : null}
-              {azurePreview.payload?.summary && (
-                <div>Payload: {azurePreview.payload.summary}</div>
-              )}
-              {azurePreview.note && <div style={{ color: 'var(--ink-3)', marginTop: 4 }}>{azurePreview.note}</div>}
+            <div className="meta meta-block azure-preview">
+              {(() => {
+                const dm = azurePreview.data_minimization ?? azurePreview.payload?.data_minimization;
+                const fp = dm?.payload_fingerprint;
+                const summ = azurePreview.payload?.local_summary;
+                const forbidden: string[] = [];
+                if (dm) {
+                  if (dm.raw_transcripts === false) forbidden.push("raw transcripts");
+                  if (dm.vault_paths === false) forbidden.push("vault paths");
+                  if (dm.forbidden_categories?.length) forbidden.push(...dm.forbidden_categories);
+                }
+                return (
+                  <>
+                    {fp && <div>Payload fingerprint: <code>{fp}</code></div>}
+                    {forbidden.length > 0 && <div>Never sent: {forbidden.join(", ")}</div>}
+                    {summ?.days_analyzed != null && <div>Payload: {summ.days_analyzed} days · {summ.files_scanned ?? "—"} files</div>}
+                    {azurePreview.payload?.summary && <div>Payload: {azurePreview.payload.summary}</div>}
+                    {azurePreview.note && <div className="note-line">{azurePreview.note}</div>}
+                  </>
+                );
+              })()}
             </div>
           )}
           {azureResult && azureResult.share_url && (
-            <div style={{ marginTop: 10 }}>
-              <a href={azureResult.share_url} target="_blank" rel="noreferrer" style={{ fontWeight: 500 }}>
+            <div className="meta-block">
+              <a className="share-link" href={azureResult.share_url} target="_blank" rel="noreferrer">
                 Open shared clinical summary →
               </a>
             </div>
           )}
           {azureResult && !azureResult.share_url && azureResult.note && (
-            <div className="meta" style={{ marginTop: 10 }}>{azureResult.note}</div>
+            <div className="meta meta-block">{azureResult.note}</div>
           )}
         </div>
       </div>
@@ -237,26 +277,26 @@ export function DoctorHandoff({ questions, context }: Props) {
         <div className="card-header">
           <div className="card-title">Skin photo ABCDE check (optional)</div>
         </div>
-        <p style={{ color: 'var(--ink-2)', fontSize: 14, lineHeight: 1.5 }}>
+        <p className="card-lede">
           Upload a photo and get <strong>descriptive ABCDE-inspired features</strong> only —
           not a diagnosis, not a risk score. For any skin concern, see a dermatologist.
         </p>
 
-        <details style={{ marginTop: 8, fontSize: 13 }}>
-          <summary style={{ cursor: 'pointer', color: 'var(--ink-3)' }}>How to photograph a skin spot</summary>
-          <ul style={{ marginTop: 8, paddingLeft: 20, color: 'var(--ink-2)' }}>
+        <details className="skin-guide">
+          <summary>How to photograph a skin spot</summary>
+          <ul>
             {(skinResult?.photo_guide ?? [
               'Use bright, diffuse, natural lighting (avoid harsh shadows and flash).',
               'Photograph the spot straight-on, filling most of the frame.',
               'Place a ruler or coin next to the spot for size reference.',
               'Keep the camera steady and in focus.',
             ]).map((g: string, i: number) => (
-              <li key={i} style={{ marginBottom: 4 }}>{g}</li>
+              <li key={i}>{g}</li>
             ))}
           </ul>
         </details>
 
-        <div style={{ marginTop: 12 }}>
+        <div className="skin-upload">
           <input
             type="file"
             accept="image/*"
@@ -273,7 +313,7 @@ export function DoctorHandoff({ questions, context }: Props) {
                 return;
               }
               const confirmed = window.confirm(
-                'Analyse this photo locally on this device? The image stays on your machine unless you enable external analysis. This is NOT a diagnosis.'
+                'Analyze this photo locally on this device? The image stays on your machine unless you enable external analysis. This is NOT a diagnosis.'
               );
               if (!confirmed) return;
               setSkinBusy(true);
@@ -299,29 +339,29 @@ export function DoctorHandoff({ questions, context }: Props) {
               }
             }}
           />
-          {skinBusy && <div className="meta" style={{ marginTop: 8 }}>Analysing image locally…</div>}
+          {skinBusy && <div className="meta skin-busy">Analyzing image locally…</div>}
           {skinError && (
-            <div style={{ marginTop: 10, fontSize: 13, color: 'var(--danger, #b91c1c)' }}>
-              Could not analyse: {skinError}
+            <div className="skin-error">
+              Could not analyze: {skinError}
             </div>
           )}
           {skinResult && !skinResult.error && (
-            <div style={{ marginTop: 16, fontSize: 13 }}>
+            <div className="skin-result">
               <div><strong>Local ABCDE description</strong></div>
-              <ul style={{ marginTop: 6, paddingLeft: 20 }}>
+              <ul>
                 {(skinResult.observations ?? []).map((obs: string, i: number) => (
-                  <li key={i} style={{ marginBottom: 4 }}>{obs}</li>
+                  <li key={i}>{obs}</li>
                 ))}
               </ul>
               {skinResult.abcde_observations && (
-                <div className="meta" style={{ marginTop: 6 }}>
+                <div className="meta skin-meta">
                   diameter {skinResult.abcde_observations.diameter_px}px ·
                   asymmetry {skinResult.abcde_observations.asymmetry} ·
                   border {skinResult.abcde_observations.border_contrast} ·
                   colours {skinResult.abcde_observations.distinct_colors}
                 </div>
               )}
-              <div className="meta" style={{ marginTop: 6 }}>{skinResult.recommendation}</div>
+              <div className="meta skin-meta">{skinResult.recommendation}</div>
               {skinResult.external && <div className="meta">External stub: {skinResult.external.note}</div>}
             </div>
           )}
@@ -337,6 +377,7 @@ export function DoctorHandoff({ questions, context }: Props) {
       className="print-only"
       visitDate={new Date().toISOString().slice(0, 10)}
       profile={context?.profile}
+      context={context}
       clinicalSummary={clinicalSummary}
       questions={questions}
     />

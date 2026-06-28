@@ -2,6 +2,7 @@ import * as I from "lucide-react";
 
 export type TabId =
   | "dashboard"
+  | "capture"
   | "context"
   | "timeline"
   | "condition"
@@ -23,6 +24,7 @@ const GROUPS: NavGroup[] = [
   {
     title: "Your health",
     items: [
+      { id: "capture", label: "Add data", hint: "Docs & voice notes", icon: <I.Plus size={18} /> },
       { id: "context", label: "My context", hint: "Profile, meds, logs", icon: <I.User size={18} /> },
       { id: "timeline", label: "Timeline", hint: "Day by day", icon: <I.Clock size={18} /> },
       { id: "condition", label: "Condition", hint: "Migraine, sleep, mood", icon: <I.Activity size={18} /> }
@@ -62,7 +64,7 @@ export function Sidebar({ active, onChange, pendingSuggestions = 0, displayName 
         <div>
           <strong>VitaSide</strong>
           <div className="brand-subtitle">
-            {displayName ? `for ${displayName}` : "your patterns — locally"}
+            {displayName ? `for ${displayName}` : "Your patterns, processed locally"}
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { Briefing, NextStep, Sidecar } from "../api";
-import { Shield, Sparkles, Database } from "lucide-react";
+import { Shield, Quote, Database } from "lucide-react";
 
 type Props = {
   briefing?: Briefing;
@@ -45,7 +45,7 @@ export function WelcomeHero({ briefing, sidecar, displayName, nextStep, onPrimar
           </div>
           <div className="welcome-stat">
             <strong>{footprint?.overlap_days ?? 0}</strong>
-            <span>Omi + Apple</span>
+            <span>overlap days</span>
           </div>
           {isDemo && (
             <div className="welcome-stat demo">
@@ -57,7 +57,7 @@ export function WelcomeHero({ briefing, sidecar, displayName, nextStep, onPrimar
 
         <div className="welcome-trust">
           <span><Shield size={14} /> Local-first</span>
-          <span><Sparkles size={14} /> Citation-backed</span>
+          <span><Quote size={14} /> Citation-backed</span>
           <span><Database size={14} /> {sidecar?.name ?? "Sidecar"} active</span>
         </div>
 

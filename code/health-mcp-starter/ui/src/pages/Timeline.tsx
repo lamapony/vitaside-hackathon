@@ -79,8 +79,8 @@ export function Timeline({ entries, activeSignal, setActiveSignal }: Props) {
       <div className="card timeline-filter-card">
         <div className="card-header">
           <div>
-            <p className="eyebrow">Timeline v2</p>
-            <div className="card-title">Heatmap + citation drill-down</div>
+            <p className="eyebrow">Calendar view</p>
+            <div className="card-title">Signal heatmap and citations</div>
           </div>
           <Filter size={18} />
         </div>

@@ -7,6 +7,18 @@ type Props = {
 
 const VAULT_NOT_READY = new Set<DataSourceStatus>(["explicit_empty", "scope_blocked"]);
 
+const SOURCE_LABELS: Record<string, string> = {
+  omi_vault: "Omi vault",
+  apple_export: "Apple Health",
+  apple_health: "Apple Health",
+  google_health: "Google Health",
+  manual_log: "Manual log",
+};
+
+function sourceLabel(id: string): string {
+  return SOURCE_LABELS[id] ?? id.replace(/_/g, " ");
+}
+
 export function DataSources({ data }: Props) {
   const summary = data?.summary;
   const sources = data?.sources ?? [];
@@ -38,12 +50,12 @@ export function DataSources({ data }: Props) {
           <div className="summary-item">
             <span>Connected</span>
             <strong>{summary.connected_sources.length}</strong>
-            <small>{summary.connected_sources.join(", ") || "none"}</small>
+            <small>{summary.connected_sources.map(sourceLabel).join(", ") || "none"}</small>
           </div>
           <div className="summary-item">
             <span>Needs setup</span>
             <strong>{summary.needs_setup.length}</strong>
-            <small>{summary.needs_setup.join(", ") || "all ready"}</small>
+            <small>{summary.needs_setup.map(sourceLabel).join(", ") || "all ready"}</small>
           </div>
           {primary && (
             <div className="summary-item">
@@ -75,7 +87,6 @@ function SourceCard({ source }: { source: DataSource }) {
     <article className="source-card soft-card">
       <div className="source-header">
         <div>
-          <p className="eyebrow">{source.id}</p>
           <h2>{source.label}</h2>
           {source.description && source.description !== source.label && (
             <p className="source-subtitle">{source.description}</p>

@@ -36,6 +36,7 @@ export function SidecarPage({ sidecar }: Props) {
   const audit = sidecar.audit;
   const toolsUsed = audit?.tools_used ?? {};
   const toolEntries = Object.entries(toolsUsed).sort((a, b) => b[1] - a[1]);
+  const recentEvents = audit?.recent ?? [];
 
   return (
     <section className="page-grid fade-in">
@@ -166,6 +167,31 @@ export function SidecarPage({ sidecar }: Props) {
           Audit log records paths and counts only — never raw note text. Azure ops log fingerprints only.
         </div>
       </div>
+
+      {recentEvents.length > 0 && (
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Recent audit events</p>
+              <div className="card-title">Latest tool calls (metadata only)</div>
+            </div>
+            <ScrollText size={18} />
+          </div>
+          <div className="audit-tail">
+            {recentEvents.slice(0, 8).map((ev, i) => (
+              <div className="audit-row" key={i}>
+                <span className="audit-ts">{ev.ts ? ev.ts.replace("T", " ").slice(5, 19) : "—"}</span>
+                <span className="audit-event">{ev.event ?? "—"}</span>
+                <span className="audit-tool">{ev.tool ?? "—"}</span>
+                {ev.count != null && <span className="audit-count">{ev.count} files</span>}
+              </div>
+            ))}
+          </div>
+          <div className="meta" style={{ marginTop: 10 }}>
+            Scoped reads log paths and counts only — never raw note text. Full log: <code>audit.log</code>.
+          </div>
+        </div>
+      )}
 
       <div className="disclaimer">
         Quality gates on every analysis output: confidence, dated citations, and disclaimer. The sidecar is

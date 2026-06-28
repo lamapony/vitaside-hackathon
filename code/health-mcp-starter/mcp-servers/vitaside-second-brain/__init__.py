@@ -1,0 +1,1 @@
+"""VIT-27 second-brain read MCP (read-only plane B)."""

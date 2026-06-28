@@ -30,6 +30,7 @@ import type {
   ClinicalSummary,
   N1Compare,
   MultiSourceResponse,
+  FrameGlassesResponse,
 } from "./api";
 
 export const DISCLAIMER =
@@ -385,6 +386,23 @@ export function mockClinicalSummary(): ClinicalSummary {
   };
 }
 
+export function mockFrameGlasses(): FrameGlassesResponse {
+  return {
+    connected: true,
+    captures: 8,
+    top_tags: [["dim", 8], ["low_light", 8], ["evening_or_night", 8], ["stationary", 8], ["high_contrast_detail", 8]],
+    activity_distribution: { low_activity: 8 },
+    location_distribution: { indoor_dim: 8 },
+    recommendation: "Frequent low-activity / stationary periods detected. Consider suggesting more movement or outdoor time aligned with goals.",
+    goals_alignment: "Data shows patterns relevant to goals from patient profile.",
+    recent: [
+      { timestamp: "2026-06-28T14:04:26", tags: ["dim", "low_light", "stationary"], activity: "low_activity", location: "indoor_dim" },
+    ],
+    local: true,
+    disclaimer: "Frame glasses vision capture. All processing local; export only on approval.",
+  };
+}
+
 export function mockMultiSource(): MultiSourceResponse {
   return {
     sources: [
@@ -393,8 +411,9 @@ export function mockMultiSource(): MultiSourceResponse {
       { id: "wearables", label: "Wearables (Apple Health)", status: "connected", events: 2, proactive: false },
       { id: "omi", label: "Omi voice transcripts", status: "connected", events: 1, proactive: false },
       { id: "doctor_device", label: "Doctor-prescribed device", status: "connected", events: 2, proactive: true },
+      { id: "frame_glasses", label: "Frame glasses (vision)", status: "connected", events: 8, proactive: false },
     ],
-    total_events: 96,
+    total_events: 104,
     doctor_device_active: true,
     local: true,
     disclaimer: "All sources processed locally. Doctor-device collection is temporary and manifest-gated.",
@@ -621,6 +640,7 @@ export function mockFor(method: string, url: string, body?: BodyInit | null | un
         case "/api/clinical-summary": return mockClinicalSummary();
         case "/api/data-sources": return mockDataSources();
         case "/api/multi-source": return mockMultiSource();
+        case "/api/frame-glasses": return mockFrameGlasses();
         case "/api/azure-contract": return mockAzureContract();
         case "/api/preview-azure": return mockPreviewAzure();
         case "/api/context-suggestions": return mockContextSuggestions();

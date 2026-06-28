@@ -484,33 +484,48 @@ def multi_source() -> Dict[str, Any]:
     try:
         from multi_source_collector import MultiSourceCollector
         vault = os.environ.get("OMI_VAULT_PATH", str(ROOT / "demo-data" / "vault"))
-        sources = ["notes", "agent", "wearables", "omi", "doctor_device"]
-        col = MultiSourceCollector(vault, sources)
+        sources = ["notes", "agent", "wearables", "omi", "doctor_device", "frame_glasses"]
+        col = MultiSourceCollector(vault, [s for s in sources if s != "frame_glasses"])
         events = col.collect_all()
         counts: Dict[str, int] = {}
         for e in events:
             counts[e.source] = counts.get(e.source, 0) + 1
-        keymap = {"notes": "obsidian", "agent": "agent_hermes", "wearables": "apple_health", "omi": "omi", "doctor_device": "doctor_device"}
+        keymap = {"notes": "obsidian", "agent": "agent_hermes", "wearables": "apple_health", "omi": "omi", "doctor_device": "doctor_device", "frame_glasses": "frame_glasses"}
         labels = {
             "obsidian": "Obsidian notes",
             "agent_hermes": "Agent (Hermes)",
             "apple_health": "Wearables (Apple Health)",
             "omi": "Omi voice transcripts",
             "doctor_device": "Doctor-prescribed device",
+            "frame_glasses": "Frame glasses (vision)",
         }
         # Real notes count from the actual vault scan (collector stub is a placeholder).
         try:
             notes_count = len(vita._scan_omi(120, tool="multi_source"))
         except Exception:
             notes_count = counts.get("obsidian", 0)
+        # Frame glasses captures from the ~/vitaside integration (vision lifestyle capture).
+        frame_captures = 0
+        try:
+            frame_jsonl = Path.home() / "vitaside" / "data" / "lifestyle_events.jsonl"
+            if frame_jsonl.exists():
+                with open(frame_jsonl) as fh:
+                    frame_captures = sum(1 for _ in fh)
+        except Exception:
+            pass
         src_list = []
         for s in sources:
             key = keymap.get(s, s)
-            ev = notes_count if s == "notes" else counts.get(key, 0)
+            if s == "frame_glasses":
+                ev = frame_captures
+            elif s == "notes":
+                ev = notes_count
+            else:
+                ev = counts.get(key, 0)
             src_list.append({
                 "id": s,
                 "label": labels.get(key, s),
-                "status": "connected",
+                "status": "connected" if (s != "frame_glasses" or frame_captures > 0) else "available",
                 "events": ev,
                 "proactive": s == "doctor_device",
             })
@@ -523,6 +538,52 @@ def multi_source() -> Dict[str, Any]:
         }
     except Exception as exc:  # API boundary
         return {"error": "multi_source_failed", "message": str(exc), "sources": [], "total_events": 0}
+
+
+@app.get("/api/frame-glasses")
+def frame_glasses() -> Dict[str, Any]:
+    """Frame glasses (Brilliant Labs) vision lifestyle capture integration.
+
+    Reads the ~/vitaside integration data: capture events, lifestyle patterns,
+    and the doctor summary. All local-first.
+    """
+    import json as _json
+    try:
+        data_dir = Path.home() / "vitaside" / "data"
+        events_path = data_dir / "lifestyle_events.jsonl"
+        patterns_path = data_dir / "patterns.json"
+        summary_files = sorted(data_dir.glob("doctor_summary_*.json"))
+        captures = 0
+        recent: List[Dict[str, Any]] = []
+        if events_path.exists():
+            with open(events_path) as fh:
+                lines = [ln for ln in fh.readlines() if ln.strip()]
+            captures = len(lines)
+            recent = [_json.loads(ln) for ln in lines[-3:]]
+        patterns: Dict[str, Any] = {}
+        if patterns_path.exists():
+            patterns = _json.loads(patterns_path.read_text())
+        summary: Dict[str, Any] = {}
+        if summary_files:
+            summary = _json.loads(summary_files[-1].read_text())
+        return {
+            "connected": captures > 0,
+            "captures": captures,
+            "top_tags": (patterns.get("top_tags") or [])[:6],
+            "activity_distribution": patterns.get("activity_distribution", {}),
+            "location_distribution": patterns.get("location_distribution", {}),
+            "recommendation": patterns.get("recommendation_for_doctor", ""),
+            "goals_alignment": patterns.get("goals_alignment", ""),
+            "recent": [
+                {"timestamp": e.get("timestamp"), "tags": e.get("lifestyle_tags", []), "activity": e.get("activity_level"), "location": e.get("location_type")}
+                for e in recent
+            ],
+            "doctor_summary": summary,
+            "local": True,
+            "disclaimer": "Frame glasses vision capture. All processing local; export only on approval.",
+        }
+    except Exception as exc:  # API boundary
+        return {"connected": False, "captures": 0, "error": "frame_unavailable", "message": str(exc)}
 
 
 if __name__ == "__main__":

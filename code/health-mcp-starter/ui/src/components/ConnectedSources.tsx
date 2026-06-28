@@ -6,7 +6,7 @@
  * Backed by /api/multi-source (live) with mock fallback.
  */
 import { useEffect, useState } from "react";
-import { FileText, Bot, Watch, Mic, Stethoscope, Lock, Sparkles } from "lucide-react";
+import { FileText, Bot, Watch, Mic, Stethoscope, Lock, Sparkles, Glasses } from "lucide-react";
 import type { MultiSourceResponse } from "../api";
 import { getJson } from "../api";
 
@@ -16,6 +16,7 @@ const SOURCE_ICONS: Record<string, React.ReactNode> = {
   wearables: <Watch size={18} />,
   omi: <Mic size={18} />,
   doctor_device: <Stethoscope size={18} />,
+  frame_glasses: <Glasses size={18} />,
 };
 
 export function ConnectedSources() {

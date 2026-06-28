@@ -3,6 +3,7 @@ import { NextStepsPanel } from "../components/NextStepsPanel";
 import { WelcomeHero } from "../components/WelcomeHero";
 import { DemoGuide } from "../components/DemoGuide";
 import { ConnectedSources } from "../components/ConnectedSources";
+import { FrameGlasses } from "../components/FrameGlasses";
 import type { TabId } from "../components/Sidebar";
 import { ArrowRight, Lightbulb, User } from "lucide-react";
 
@@ -46,6 +47,8 @@ export function Dashboard({ briefing, sidecar, context, nextSteps, pendingSugges
       />
 
       <ConnectedSources />
+
+      <FrameGlasses />
 
       {isNewUser && (
         <div className="onboarding-banner">

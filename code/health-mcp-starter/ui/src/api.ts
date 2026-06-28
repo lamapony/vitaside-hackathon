@@ -383,6 +383,20 @@ export type MultiSourceResponse = {
   disclaimer?: string;
 };
 
+export type FrameGlassesResponse = {
+  connected?: boolean;
+  captures?: number;
+  top_tags?: [string, number][];
+  activity_distribution?: Record<string, number>;
+  location_distribution?: Record<string, number>;
+  recommendation?: string;
+  goals_alignment?: string;
+  recent?: { timestamp?: string; tags?: string[]; activity?: string; location?: string }[];
+  doctor_summary?: Record<string, unknown>;
+  local?: boolean;
+  disclaimer?: string;
+};
+
 export async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {

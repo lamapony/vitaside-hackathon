@@ -2,8 +2,10 @@
 mcp-config.local.json
 .venv/
 .pytest_cache/
+.coverage
 __pycache__/
 *.pyc
+_dbg_*.py
 audit.log
 out/
 local-data/

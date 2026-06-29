@@ -1,4 +1,5 @@
 # VIT-45 — offline CI for health-mcp-starter (pytest + mcporter gates)
+# Copy to .github/workflows/vitaside-ci.yml (requires GitHub token with `workflow` scope to push)
 name: VitaSide CI
 
 on:

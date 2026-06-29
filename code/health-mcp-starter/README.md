@@ -1,23 +1,34 @@
-# Health Patterns MCP Server — v2 (Apple Health)
+# Health Patterns MCP Server
 
-MCP server for Hermes (or Cursor). Analyzes Omi notes + Apple Health data locally.
+> **Parent repo frozen.** See [../../STATUS.md](../../STATUS.md). Agent wiring: [../../docs/AGENT-ONBOARDING.md](../../docs/AGENT-ONBOARDING.md).
 
-## Quick start (without Hermes)
+MCP sidecar for Cursor, Hermes, or any stdio MCP host. Analyzes Omi notes + Apple Health (+ multi-source lanes) locally.
+
+## Quick start
 
 ```bash
-# List available tools
-npx mcporter list --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py"
+./install.sh
+source .venv/bin/activate
+make test          # or: python test_mvp.py
+./serve-ui.sh      # dashboard http://127.0.0.1:5173
+```
 
-# Omi analysis
-npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" analyze_lifestyle_patterns --timeout 30000
+Generate MCP config for Cursor/Hermes:
 
-# Apple Health (demo data if export.xml is missing)
-npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" load_apple_health_data --timeout 30000
-npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" analyze_apple_patterns --timeout 30000
-npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" combine_omi_and_apple --timeout 30000
+```bash
+export OMI_VAULT_PATH="$HOME/Documents/Obsidian Vault"   # or keep demo-data/vault
+./issue-sidecar.sh sleep-stress-sidecar
+./write-mcp-config.sh sidecars/sleep-stress-sidecar/manifest.yaml mcp-config.local.json
+```
 
-# Full doctor report
-npx mcporter call --stdio "/opt/anaconda3/bin/python3 $(pwd)/health-pattern-mcp.py" generate_doctor_report --timeout 30000
+## mcporter smoke (optional)
+
+```bash
+source .venv/bin/activate
+npx mcporter list --stdio ".venv/bin/python health-pattern-mcp.py"
+npx mcporter call --stdio ".venv/bin/python health-pattern-mcp.py" get_actionable_briefing --timeout 30000
+npx mcporter call --stdio ".venv/bin/python health-pattern-mcp.py" analyze_lifestyle_patterns --timeout 30000
+npx mcporter call --stdio ".venv/bin/python health-pattern-mcp.py" generate_doctor_report --timeout 30000
 ```
 
 ## Local Dashboard UI
@@ -52,11 +63,12 @@ Add to `~/.hermes/config.yaml`:
 ```yaml
 mcp_servers:
   health_patterns:
-    command: /opt/anaconda3/bin/python3
+    command: /path/to/vitaside-hackathon/code/health-mcp-starter/.venv/bin/python
     args:
       - /path/to/vitaside-hackathon/code/health-mcp-starter/health-pattern-mcp.py
     env:
-      OMI_VAULT_PATH: "/Users/YOUR_USERNAME/Documents/Obsidian Vault"
+      VITASIDE_MANIFEST: /path/to/.../sidecars/sleep-stress-sidecar/manifest.yaml
+      OMI_VAULT_PATH: /Users/YOUR_USERNAME/Documents/Obsidian Vault
     timeout: 180
 ```
 

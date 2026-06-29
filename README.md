@@ -1,54 +1,69 @@
 # VitaSide — Local-First Health Intelligence
 
-> **Project status: Frozen (June 2026)**  
-> Hackathon + post-hackathon integration complete. Codebase is stable and tested locally.  
-> Not actively maintained. See [STATUS.md](STATUS.md) for the full handoff snapshot.
+> **Frozen (June 2026)** — stable, tested, not actively maintained.  
+> Handoff: [STATUS.md](STATUS.md) · Agent setup: [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md)
 
-Local-first personal agent: lifestyle signals from Omi notes, Apple Health, Frame glasses, doctor-prescribed devices, and agent context → pattern analysis with citations → doctor-ready summaries. **No cloud by default.**
+Local-first agent sidecar: Omi notes, Apple Health, Frame glasses, doctor devices → pattern analysis with citations → doctor-ready summaries. **No cloud by default.**
+
+## Quick start
+
+```bash
+git clone https://github.com/lamapony/vitaside-hackathon.git
+cd vitaside-hackathon
+make install          # venv + demo vault + sidecar
+make test             # 67 acceptance checks — should pass
+make serve-ui         # http://127.0.0.1:5173
+```
+
+All commands: `make help` or `./scripts/vitaside help`
+
+## Links to share
+
+| Audience | URL / doc |
+|----------|-----------|
+| **Doctor / demo viewer** | https://lamapony.github.io/vitaside-hackathon/ |
+| **Agent operator (MCP)** | [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md) |
+| **Repo** | https://github.com/lamapony/vitaside-hackathon |
 
 ## Try it
 
-| Mode | Command / link |
-|------|----------------|
-| **Verify** | `./scripts/vitaside test` |
-| **Full demo** | `cd code/health-mcp-starter && ./run-demo.sh` |
-| **Doctor demo (GitHub Pages)** | https://lamapony.github.io/vitaside-hackathon/ — full React dashboard, sample data |
-| **Dashboard (local + API)** | `cd code/health-mcp-starter && ./serve-ui.sh` → http://127.0.0.1:5173 |
+| Mode | Command |
+|------|---------|
+| Verify | `make test` |
+| Unit tests | `make pytest` |
+| Full CLI demo | `make demo` |
+| Local dashboard | `make serve-ui` |
+| Rebuild Pages | `make pages` |
+| MCP config file | `make mcp-config` |
 
 ## Repo map
 
 | Path | What |
 |------|------|
-| `code/health-mcp-starter/` | **Main platform** — MCP server, FastAPI, React UI, sidecar protocol |
-| `frame/` | Frame glasses BLE capture (Brilliant Labs) |
-| `vitaside/` | Vision lifestyle analyzer + local jsonl storage |
-| `data/` | Demo Frame capture events |
-| `docs/` | GitHub Pages + technical docs |
-| `research/` | Integration research notes |
-| `vault/` | Architecture, privacy contracts, pain points |
-| `plan/` | Sprint history + depth roadmap |
-
-## Data sources
-
-Omi/Obsidian · Apple Health · Frame glasses · Doctor device window · Hermes agent context · Manual logs · Second-brain (Obsidian + mempalace)
+| `code/health-mcp-starter/` | MCP server, FastAPI, React UI, sidecar protocol |
+| `frame/` | Frame glasses BLE capture |
+| `vitaside/` | Vision lifestyle analyzer + storage |
+| `data/` | Demo Frame events |
+| `docs/` | Docs + GitHub Pages SPA |
+| `vault/` | Architecture & privacy contracts |
+| `plan/` | Sprint history (historical) |
 
 ## Real data (when resuming)
 
 ```bash
-export OMI_VAULT_PATH="~/Documents/Obsidian Vault"
+export OMI_VAULT_PATH="$HOME/Documents/Obsidian Vault"
 cd code/health-mcp-starter
 ./issue-sidecar.sh sleep-stress-sidecar
-./serve-ui.sh
+make serve-ui   # from repo root, or ./serve-ui.sh here
+make mcp-config # writes mcp-config.local.json for Cursor/Hermes
 ```
-
-Frame capture: `python frame/pair_and_test.py` → `python frame/runner.py`
 
 ## Key docs
 
-- [STATUS.md](STATUS.md) — frozen snapshot, tests, limitations
-- [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md) — **подключить агента (MCP) + что отправить по ссылке**
-- [docs/MVP-1.0.md](docs/MVP-1.0.md) — MVP definition
+- [STATUS.md](STATUS.md) — snapshot, tests, limitations
+- [docs/README.md](docs/README.md) — documentation index
+- [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md) — connect an agent
 - [code/health-mcp-starter/README.md](code/health-mcp-starter/README.md) — MCP tools + UI
-- [plan/DEPTH-ROADMAP.md](plan/DEPTH-ROADMAP.md) — future depth work
+- [CONTRIBUTING.md](CONTRIBUTING.md) — fork guidelines
 
-**Not a medical device.** Patterns for self-awareness and visit prep only.
+MIT License · **Not a medical device** — visit prep patterns only.

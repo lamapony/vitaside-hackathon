@@ -1,13 +1,48 @@
 #!/usr/bin/env bash
-# Repo-root QA wrapper — delegates to code/health-mcp-starter.
+# VitaSide repo-root CLI — common operator tasks.
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="$REPO_ROOT/code/health-mcp-starter"
 
-cmd="${1:-}"
+usage() {
+  cat <<EOF
+VitaSide — frozen project CLI
+
+Usage: $(basename "$0") <command> [args...]
+
+Commands:
+  install       venv + demo data + sidecar (./install.sh)
+  test          MVP acceptance suite (67 checks)
+  pytest        Unit tests (38 tests)
+  demo          Full CLI demo flow
+  serve-ui      Local React dashboard + API
+  pages         Build GitHub Pages doctor demo → docs/
+  mcp-config    Write mcp-config.local.json from sidecar manifest
+  preflight     Pitch / demo preflight checks
+  help          This message
+
+Examples:
+  $(basename "$0") install
+  $(basename "$0") test
+  $(basename "$0") serve-ui
+  $(basename "$0") pages
+
+Docs:  docs/AGENT-ONBOARDING.md  ·  STATUS.md
+Demo:  https://lamapony.github.io/vitaside-hackathon/
+EOF
+}
+
+cmd="${1:-help}"
 shift || true
 
 case "$cmd" in
+  help|-h|--help)
+    usage
+    ;;
+  install)
+    cd "$APP"
+    exec ./install.sh "$@"
+    ;;
   test)
     cd "$APP"
     export OMI_VAULT_PATH="$APP/demo-data/vault"
@@ -15,6 +50,14 @@ case "$cmd" in
     # shellcheck disable=SC1091
     source "$APP/scripts/venv-python.sh"
     exec "$PYTHON" test_mvp.py "$@"
+    ;;
+  pytest)
+    cd "$APP"
+    export OMI_VAULT_PATH="$APP/demo-data/vault"
+    export VITASIDE_MANIFEST="$APP/sidecars/sleep-stress-sidecar/manifest.yaml"
+    # shellcheck disable=SC1091
+    source "$APP/scripts/venv-python.sh"
+    exec "$PYTHON" -m pytest tests/ -q "$@"
     ;;
   demo)
     cd "$APP"
@@ -24,12 +67,25 @@ case "$cmd" in
     cd "$APP"
     exec ./serve-ui.sh "$@"
     ;;
+  pages)
+    exec "$REPO_ROOT/scripts/build-github-pages.sh" "$@"
+    ;;
+  mcp-config)
+    cd "$APP"
+    sidecar="${1:-sleep-stress-sidecar}"
+    out="${2:-mcp-config.local.json}"
+    export OMI_VAULT_PATH="${OMI_VAULT_PATH:-$APP/demo-data/vault}"
+    ./issue-sidecar.sh "$sidecar" >/dev/null
+    exec ./write-mcp-config.sh "sidecars/${sidecar}/manifest.yaml" "$out"
+    ;;
   preflight)
     cd "$APP"
     exec ./pitch_preflight.sh "$@"
     ;;
   *)
-    echo "Usage: $0 {test|demo|serve-ui|preflight} [args...]" >&2
+    echo "Unknown command: $cmd" >&2
+    echo "" >&2
+    usage >&2
     exit 1
     ;;
 esac

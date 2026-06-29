@@ -85,7 +85,8 @@ git tag -a 0.2.0-productization -m "VIT-41 packaging slice"
 
 CEO **G2** decides when integration branches merge to `main`; this tag documents the packaging milestone only.
 
-## Related vault artifacts
+## Related docs
 
-- Research vault: `08-Planning/VIT-41-trunk-release-changelog.md`
-- Phase 2 plan: `phase-2-productization-plan.md` § VIT-41
+- Monorepo status: `../../STATUS.md`
+- Agent onboarding: `../../docs/AGENT-ONBOARDING.md`
+- Changelog: `CHANGELOG.md`

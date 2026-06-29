@@ -34,9 +34,10 @@ OMI_VAULT_PATH="$PWD/demo-data/vault" python3 -m pytest tests/ -q   # 38 unit te
 From repo root:
 
 ```bash
-./scripts/vitaside test
-./scripts/vitaside demo
-./scripts/vitaside serve-ui
+make install    # first time
+make test       # MVP acceptance
+make pytest     # unit tests
+make serve-ui
 ```
 
 ---
@@ -70,7 +71,7 @@ Uses `VITE_DEMO_LOCK=true` — rich sample data, no backend required.
 
 Share with MCP operators: [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md)
 
----
+## If you resume development
 
 1. Read `plan/DEPTH-ROADMAP.md` for post-MVP ideas
 2. Point `OMI_VAULT_PATH` at a real Obsidian vault and run weekly

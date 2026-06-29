@@ -12,8 +12,8 @@ Local-first personal agent: lifestyle signals from Omi notes, Apple Health, Fram
 |------|----------------|
 | **Verify** | `./scripts/vitaside test` |
 | **Full demo** | `cd code/health-mcp-starter && ./run-demo.sh` |
-| **Dashboard** | `cd code/health-mcp-starter && ./serve-ui.sh` → http://127.0.0.1:5173 |
-| **Static demo** | https://lamapony.github.io/vitaside-hackathon/ |
+| **Doctor demo (GitHub Pages)** | https://lamapony.github.io/vitaside-hackathon/ — full React dashboard, sample data |
+| **Dashboard (local + API)** | `cd code/health-mcp-starter && ./serve-ui.sh` → http://127.0.0.1:5173 |
 
 ## Repo map
 

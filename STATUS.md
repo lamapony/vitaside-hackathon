@@ -18,7 +18,7 @@ This document is the handoff snapshot for anyone opening the repo later.
 | Second-brain MCP | `code/health-mcp-starter/mcp-servers/vitaside-second-brain/` | Scoped Obsidian + mempalace read |
 | Frame glasses BLE | `frame/` | Brilliant Labs capture pipeline |
 | Frame lifestyle store | `vitaside/` | Pillow analysis + jsonl events |
-| Static demo | `docs/`, `demo.html` | [GitHub Pages](https://lamapony.github.io/vitaside-hackathon/) |
+| Static demo | `docs/` (GitHub Pages) | [Doctor dashboard](https://lamapony.github.io/vitaside-hackathon/) — React UI + sample data |
 
 ---
 
@@ -57,7 +57,16 @@ Local-first MCP sidecar reads scoped health/lifestyle signals (Omi notes, Apple 
 
 ---
 
-## If you resume development
+## Rebuild GitHub Pages (doctor demo)
+
+```bash
+./scripts/build-github-pages.sh
+git add docs/ demo.html && git commit -m "docs: refresh GitHub Pages dashboard" && git push
+```
+
+Uses `VITE_DEMO_LOCK=true` — rich sample data, no backend required.
+
+---
 
 1. Read `plan/DEPTH-ROADMAP.md` for post-MVP ideas
 2. Point `OMI_VAULT_PATH` at a real Obsidian vault and run weekly

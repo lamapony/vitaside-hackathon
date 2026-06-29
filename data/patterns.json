@@ -1,0 +1,34 @@
+{
+  "total_captures": 8,
+  "top_tags": [
+    [
+      "dim",
+      8
+    ],
+    [
+      "low_light",
+      8
+    ],
+    [
+      "evening_or_night",
+      8
+    ],
+    [
+      "stationary",
+      8
+    ],
+    [
+      "high_contrast_detail",
+      8
+    ]
+  ],
+  "activity_distribution": {
+    "low_activity": 8
+  },
+  "location_distribution": {
+    "indoor_dim": 8
+  },
+  "goals_alignment": "Data shows patterns relevant to goals from patient profile.",
+  "last_updated": "2026-06-29T11:10:02.999872",
+  "recommendation_for_doctor": "Frequent low-activity / stationary periods detected. Consider suggesting more movement or outdoor time aligned with goals."
+}

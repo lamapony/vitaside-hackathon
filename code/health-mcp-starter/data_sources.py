@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from multi_source_collector import build_multi_source_snapshot
+
 # ---------------------------------------------------------------------------
 # Catalog — what CAN be used (static registry)
 # ---------------------------------------------------------------------------
@@ -251,6 +253,96 @@ SOURCE_CATALOG: List[Dict[str, Any]] = [
         "privacy": "local_only",
     },
     {
+        "id": "doctor_device",
+        "type": "prescribed_sensor",
+        "label": "Doctor-prescribed temporary device",
+        "label_ru": "Временный датчик от врача",
+        "description": "High-confidence metrics during a prescribed collection window before a visit.",
+        "description_ru": "Метрики с назначенного датчика в окне сбора перед визитом.",
+        "env_vars": [
+            {"name": "VITASIDE_DOCTOR_DEVICE_EXPORT", "required": False, "example": "~/vault/Doctor Device/export.csv"},
+            {"name": "VITASIDE_DEVICE_WINDOW_ACTIVE", "required": False, "example": "true"},
+        ],
+        "discovery": {"relative_paths": ["Doctor Device/export.csv", "Apple Health/export.xml"]},
+        "provides": ["resting_hr", "spo2", "sleep_efficiency", "hrv_sdnn", "steps", "device citations"],
+        "consumed_by": ["list_multi_sources", "monitor_device_window", "build_visit_packet"],
+        "setup_steps": [
+            "Place device export under vault/Doctor Device/ or set VITASIDE_DOCTOR_DEVICE_EXPORT",
+            "Enable collection_window in manifest or VITASIDE_DEVICE_WINDOW_ACTIVE=1 for proactive mode",
+        ],
+        "setup_steps_ru": [
+            "Экспорт датчика в vault/Doctor Device/ или VITASIDE_DOCTOR_DEVICE_EXPORT",
+            "collection_window в манифесте или VITASIDE_DEVICE_WINDOW_ACTIVE=1",
+        ],
+        "privacy": "local_only",
+    },
+    {
+        "id": "proactive_agent",
+        "type": "agent_lane",
+        "label": "Proactive agent context (Hermes)",
+        "label_ru": "Проактивный контекст агента (Hermes)",
+        "description": "Host-agent events and sidecar polls during device collection window.",
+        "description_ru": "События главного агента и опросы sidecar в окне сбора датчика.",
+        "env_vars": [],
+        "discovery": {"source": "host_context MCP argument or DEFAULT_HOST_CONTEXT"},
+        "provides": ["travel/deadline context", "sidecar_poll events", "interim visit-packet hints"],
+        "consumed_by": ["list_multi_sources", "monitor_device_window", "collaborative_insight"],
+        "setup_steps": ["Pass host_context when calling list_multi_sources / monitor_device_window"],
+        "setup_steps_ru": ["Передавать host_context в list_multi_sources / monitor_device_window"],
+        "privacy": "local_only",
+    },
+    {
+        "id": "wearables_lane",
+        "type": "wearable_aggregate",
+        "label": "Wearables multi-source lane",
+        "label_ru": "Носимые устройства (multi-source)",
+        "description": "Bracelet / Apple Health lane normalized alongside doctor device and agent.",
+        "description_ru": "Часы / Apple Health в единой ленте с датчиком и агентом.",
+        "env_vars": [],
+        "discovery": {"uses": "apple_health export paths + demo fallback"},
+        "provides": ["steps", "sleep_hours", "export size probe"],
+        "consumed_by": ["list_multi_sources", "monitor_device_window"],
+        "setup_steps": ["Export Apple Health — same paths as apple_health source"],
+        "setup_steps_ru": ["Экспорт Apple Health — те же пути, что у apple_health"],
+        "privacy": "local_only",
+    },
+    {
+        "id": "frame_glasses",
+        "type": "vision_capture",
+        "label": "Brilliant Labs Frame glasses",
+        "label_ru": "Очки Brilliant Labs Frame",
+        "description": "Periodic vision lifestyle capture via BLE → local Pillow analysis → lifestyle tags.",
+        "description_ru": "Периодический захват lifestyle через BLE → локальный анализ → теги.",
+        "env_vars": [
+            {"name": "VITASIDE_FRAME_DATA", "required": False, "example": "~/vitaside/data"},
+        ],
+        "discovery": {
+            "search_paths": [
+                "~/vitaside/data/lifestyle_events.jsonl",
+                "{repo}/data/lifestyle_events.jsonl",
+            ],
+        },
+        "provides": [
+            "lifestyle_tags (low_light, stationary, outdoor, …)",
+            "activity_level",
+            "location_type",
+            "brightness/contrast/dominant colour",
+            "doctor_summary patterns",
+        ],
+        "consumed_by": ["list_multi_sources", "/api/frame-glasses", "generate_doctor_report"],
+        "setup_steps": [
+            "Pair Frame glasses: python frame/pair_and_test.py",
+            "Capture: python frame/runner.py or frame/integrated_runner.py",
+            "Events land in ~/vitaside/data/lifestyle_events.jsonl",
+        ],
+        "setup_steps_ru": [
+            "Сопряжение: python frame/pair_and_test.py",
+            "Захват: python frame/runner.py",
+            "События: ~/vitaside/data/lifestyle_events.jsonl",
+        ],
+        "privacy": "local_only",
+    },
+    {
         "id": "azure_boost",
         "type": "optional_cloud",
         "label": "Azure OpenAI / share (optional, consent)",
@@ -407,7 +499,12 @@ TOOL_RESOURCE_MAP: Dict[str, List[str]] = {
     "list_journals": ["omi_vault", "manual_log", "sidecar_manifest"],
     "headache_insights": ["omi_vault", "manual_log", "sidecar_manifest", "condition_packs"],
     "journal_summary": ["omi_vault", "manual_log"],
-    "list_data_sources": ["sidecar_manifest", "manual_log"],
+    "list_data_sources": ["sidecar_manifest", "manual_log", "doctor_device", "proactive_agent", "wearables_lane"],
+    "list_multi_sources": [
+        "doctor_device", "proactive_agent", "wearables_lane", "frame_glasses",
+        "obsidian_notes", "apple_health", "sidecar_manifest",
+    ],
+    "monitor_device_window": ["doctor_device", "proactive_agent", "wearables_lane", "obsidian_notes", "sidecar_manifest"],
 }
 
 
@@ -570,10 +667,58 @@ def _source_status(source_id: str, vault: Path, manifest: Dict[str, Any], apple_
             "mode": os.getenv("VITASIDE_AZURE_MODE", "stub"),
             "live_openai": bool(os.getenv("AZURE_OPENAI_ENDPOINT")),
         }
+    elif source_id in ("doctor_device", "proactive_agent", "wearables_lane"):
+        ms = extra.get("multi_snapshot") or {}
+        lanes = ms.get("lanes") or {}
+        lane_key = {
+            "doctor_device": "doctor_device",
+            "proactive_agent": "proactive_agent",
+            "wearables_lane": "wearables",
+        }[source_id]
+        lane = lanes.get(lane_key) or {}
+        row["status"] = lane.get("status", "idle")
+        row["resolved_path"] = lane.get("resolved_path")
+        row["stats"] = {
+            "event_count": lane.get("event_count", 0),
+            "mode": lane.get("mode"),
+            "agent": lane.get("agent"),
+        }
+        if source_id == "doctor_device":
+            row["stats"]["collection_window_active"] = ms.get("collection_window_active", False)
+    elif source_id == "frame_glasses":
+        ms = extra.get("multi_snapshot") or {}
+        lane = (ms.get("lanes") or {}).get("frame_glasses") or {}
+        row["status"] = lane.get("status", "available")
+        row["resolved_path"] = lane.get("resolved_path")
+        row["stats"] = {
+            "event_count": lane.get("event_count", 0),
+            "captures": lane.get("event_count", 0),
+            "top_tags": lane.get("top_tags", []),
+        }
     else:
         row["status"] = "unknown"
 
     return row
+
+
+def build_multi_source_bundle(
+    vault: Path,
+    manifest: Dict[str, Any],
+    *,
+    host_context: Optional[Dict[str, Any]] = None,
+    data_mode: str = "auto",
+    days: int = 14,
+) -> Dict[str, Any]:
+    """Doctor device + proactive agent + wearables — used by MCP multi-source tools."""
+    apple_xml = find_apple_export(vault)
+    return build_multi_source_snapshot(
+        vault,
+        manifest,
+        host_context=host_context,
+        apple_xml=apple_xml,
+        days=days,
+        data_mode=data_mode,
+    )
 
 
 def build_sources_snapshot(
@@ -586,10 +731,18 @@ def build_sources_snapshot(
     host_events: int = 0,
     parseable_count: Optional[int] = None,
     scoped_parseable: Optional[int] = None,
+    host_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Full catalog + live status for MCP / API / UI."""
     apple_xml = find_apple_export(vault)
     google_xml = find_google_export(vault)
+    multi_snapshot = build_multi_source_snapshot(
+        vault,
+        manifest,
+        host_context=host_context,
+        apple_xml=apple_xml,
+        data_mode=data_mode,
+    )
     sources = [
         _source_status(
             s["id"],
@@ -603,11 +756,14 @@ def build_sources_snapshot(
             packs_dir=Path(__file__).parent / "condition_packs",
             scoped_parseable=scoped_parseable if s["id"] == "omi_vault" else None,
             google_xml=google_xml,
+            multi_snapshot=multi_snapshot if s["id"] in ("doctor_device", "proactive_agent", "wearables_lane", "frame_glasses") else None,
         )
         for s in SOURCE_CATALOG
     ]
 
-    connected = [s["id"] for s in sources if s["status"] in ("connected", "active", "enabled", "available", "demo")]
+    connected = [s["id"] for s in sources if s["status"] in (
+        "connected", "active", "enabled", "available", "demo",
+    )]
     missing = [s["id"] for s in sources if s["status"] in (
         "demo_fallback", "sparse", "missing", "disabled", "explicit_empty", "scope_blocked",
     )]
@@ -632,9 +788,13 @@ def build_sources_snapshot(
             "connected_sources": connected,
             "needs_setup": missing,
             "primary_source": primary_source,
-            "optional_enrichment": ["apple_health", "google_health", "host_context", "condition_packs"],
+            "optional_enrichment": [
+                "apple_health", "google_health", "host_context", "condition_packs",
+                "doctor_device", "wearables_lane", "frame_glasses",
+            ],
         },
         "sources": sources,
+        "multi_source": multi_snapshot,
         "catalog": SOURCE_CATALOG,
         "analysis_pipeline": ANALYSIS_PIPELINE,
         "tool_resource_map": TOOL_RESOURCE_MAP,

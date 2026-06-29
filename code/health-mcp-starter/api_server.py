@@ -549,7 +549,14 @@ def frame_glasses() -> Dict[str, Any]:
     """
     import json as _json
     try:
-        data_dir = Path.home() / "vitaside" / "data"
+        data_dir = Path(os.getenv("VITASIDE_FRAME_DATA", "")).expanduser() if os.getenv("VITASIDE_FRAME_DATA") else None
+        if not data_dir or not data_dir.exists():
+            for candidate in (Path.home() / "vitaside" / "data", Path(__file__).resolve().parent.parent.parent / "data"):
+                if (candidate / "lifestyle_events.jsonl").exists():
+                    data_dir = candidate
+                    break
+            else:
+                data_dir = Path.home() / "vitaside" / "data"
         events_path = data_dir / "lifestyle_events.jsonl"
         patterns_path = data_dir / "patterns.json"
         summary_files = sorted(data_dir.glob("doctor_summary_*.json"))

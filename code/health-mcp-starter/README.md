@@ -54,7 +54,7 @@ mcp_servers:
   health_patterns:
     command: /opt/anaconda3/bin/python3
     args:
-      - /path/to/health-pattern-mcp.py
+      - /path/to/vitaside-hackathon/code/health-mcp-starter/health-pattern-mcp.py
     env:
       OMI_VAULT_PATH: "/Users/YOUR_USERNAME/Documents/Obsidian Vault"
     timeout: 180
@@ -123,3 +123,20 @@ health-pattern-mcp.py
 ```
 
 **Not a medical device.** Patterns for self-awareness and visit prep only.
+
+## Multi-Source Data Collection
+
+Supports data beyond Omi:
+- Obsidian notes / codebase-memory indexed hits
+- Hermes / agent conversations (proactive lane during device window)
+- Wearables (Apple Health export.xml)
+- **Doctor-prescribed physical device** (temporary collection window)
+- **Frame glasses** (vision lifestyle capture via `frame/` + `~/vitaside/data/`)
+
+See `multi_source_collector.py` for normalization to `HealthEvent` with citations.
+
+Proactive mode: agent calls `monitor_device_window` during the doctor's device period.
+
+## Frame Glasses Integration
+
+Hardware capture lives in repo root `frame/` (BLE via frame-sdk). Events land in `~/vitaside/data/lifestyle_events.jsonl` or repo `data/` for demo. The dashboard shows a Frame panel via `/api/frame-glasses`.

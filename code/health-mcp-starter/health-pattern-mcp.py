@@ -63,6 +63,7 @@ from narrative_engine import build_local_narrative
 from user_context import load_context
 from data_sources import (
     build_sources_snapshot,
+    build_multi_source_bundle,
     get_analysis_mechanics as _analysis_mechanics_doc,
     find_apple_export as _find_apple_export_ds,
     omi_search_paths as _omi_search_paths_ds,
@@ -1668,6 +1669,73 @@ def journal_summary(journal_id: str = "combined") -> Dict[str, Any]:
     return _with_gates(digest)
 
 
+def _multi_source_data_mode(vault: Path) -> str:
+    explicit = "OMI_VAULT_PATH" in os.environ
+    return "explicit" if explicit else ("demo" if str(vault) == str(_DEMO_VAULT) else "auto")
+
+
+@mcp.tool()
+def list_multi_sources(host_context: Optional[dict] = None) -> Dict[str, Any]:
+    """Unified doctor_device + proactive agent + wearables lanes with normalized events."""
+    manifest = assert_sidecar_active(_get_manifest())
+    vault = _resolve_vault()
+    ctx = host_context if host_context else DEFAULT_HOST_CONTEXT
+    bundle = build_multi_source_bundle(
+        vault,
+        manifest,
+        host_context=ctx,
+        data_mode=_multi_source_data_mode(vault),
+    )
+    audit(
+        "list_multi_sources",
+        {
+            "vault": str(vault),
+            "total_events": bundle.get("total_events"),
+            "doctor_device_active": bundle.get("doctor_device_active"),
+        },
+    )
+    return _with_gates({"multi_source": bundle})
+
+
+@mcp.tool()
+def monitor_device_window(
+    window_days: int = 14,
+    host_context: Optional[dict] = None,
+) -> Dict[str, Any]:
+    """Proactive monitoring during doctor-prescribed device collection window."""
+    manifest = assert_sidecar_active(_get_manifest())
+    vault = _resolve_vault()
+    ctx = host_context if host_context else DEFAULT_HOST_CONTEXT
+    bundle = build_multi_source_bundle(
+        vault,
+        manifest,
+        host_context=ctx,
+        data_mode=_multi_source_data_mode(vault),
+        days=window_days,
+    )
+    actions: List[str] = []
+    if bundle.get("collection_window_active") or bundle.get("doctor_device_active"):
+        actions = [
+            "Refresh build_visit_packet with multi-source citations",
+            "Compare wearables vs doctor_device HRV / sleep trends",
+            "Surface interim insights to host agent (Hermes) before visit",
+        ]
+    elif bundle.get("proactive_monitoring"):
+        actions = ["Collection window idle — pass host_context or enable manifest collection_window"]
+    monitor = {
+        "window_days": window_days,
+        "collection_window_active": bundle.get("collection_window_active"),
+        "doctor_device_active": bundle.get("doctor_device_active"),
+        "proactive_monitoring": bundle.get("proactive_monitoring"),
+        "lanes": bundle.get("lanes"),
+        "event_count_by_source": bundle.get("event_count_by_source"),
+        "recommended_actions": actions,
+        "sample_events": (bundle.get("events") or [])[:12],
+    }
+    audit("monitor_device_window", {"vault": str(vault), "window_days": window_days, "actions": len(actions)})
+    return _with_gates(monitor)
+
+
 @mcp.tool()
 def list_data_sources() -> Dict[str, Any]:
     """Catalog + live status: where analysis data comes from and what's connected."""
@@ -1684,6 +1752,7 @@ def list_data_sources() -> Dict[str, Any]:
         azure_enabled_flag=azure_enabled(manifest),
         host_events=len(DEFAULT_HOST_CONTEXT.get("events", [])),
         scoped_parseable=scoped_parseable,
+        host_context=DEFAULT_HOST_CONTEXT,
     )
     snapshot["supported_signals"] = list(SIGNAL_PATTERNS.keys())
     snapshot["sidecar"] = manifest.get("name")

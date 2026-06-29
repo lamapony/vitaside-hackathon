@@ -21,13 +21,16 @@ def check(name, cond):
 
 def main() -> None:
     global FAIL
-    os.environ.setdefault("OMI_VAULT_PATH", str(ROOT / "demo-data" / "vault"))
-    os.environ.setdefault("VITASIDE_MANIFEST", str(ROOT / "sidecars/sleep-stress-sidecar/manifest.yaml"))
+    demo_vault = ROOT / "demo-data" / "vault"
+    os.environ["OMI_VAULT_PATH"] = str(demo_vault)
+    os.environ["VITASIDE_MANIFEST"] = str(ROOT / "sidecars/sleep-stress-sidecar/manifest.yaml")
 
     spec = importlib.util.spec_from_file_location("vita", ROOT / "health-pattern-mcp.py")
     m = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(m)
+    m._DEFAULT_VAULT = demo_vault
+    m.OMI_VAULT_PATH = demo_vault
 
     print("=== VitaSide MVP 1.0 Tests ===\n")
     
@@ -94,7 +97,18 @@ def main() -> None:
     check("omi vault connected", any(s.get("id") == "omi_vault" and s.get("status") in ("connected", "demo") for s in ds.get("sources", [])))
     check("analysis pipeline documented", len(ds.get("analysis_pipeline", [])) >= 8)
     check("tool resource map", "analyze_lifestyle_patterns" in ds.get("tool_resource_map", {}))
-    
+
+    ms = m.list_multi_sources()
+    check("list_multi_sources bundle", ms.get("multi_source", {}).get("total_events", 0) > 0)
+    check(
+        "collection window from manifest",
+        ms.get("multi_source", {}).get("collection_window_active") is True,
+    )
+
+    mon = m.monitor_device_window(window_days=14)
+    check("monitor_device_window actions", len(mon.get("recommended_actions", [])) >= 1)
+    check("monitor proactive flag", mon.get("proactive_monitoring") is True)
+
     mech = m.get_analysis_mechanics()
     check("mechanics principles", len(mech.get("principles", [])) >= 3)
     check("mechanics pipeline steps", len(mech.get("pipeline", [])) >= 8)

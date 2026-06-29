@@ -1,0 +1,16 @@
+{
+  "patient_id": "patient_dima_test",
+  "name": "Dima Test",
+  "age": 35,
+  "conditions": [
+    "focus_improvement",
+    "activity_tracking"
+  ],
+  "goals": [
+    "increase physical activity",
+    "improve nutrition awareness",
+    "better sleep patterns"
+  ],
+  "doctor_notes": "Monitor lifestyle patterns for 7-14 days using Frame glasses. Focus on activity vs stationary periods.",
+  "glasses_id": "Frame FF-TEST"
+}

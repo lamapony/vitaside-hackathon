@@ -71,7 +71,99 @@ def load_manifest(path: Optional[Path] = None) -> Dict[str, Any]:
     data["_manifest_path"] = str(path)
     data["_loaded"] = True
     data["_expires_at"] = _parse_ttl(str(data.get("ttl", "30d")), issued).isoformat()
+    _enrich_manifest_extensions(data)
     return data
+
+
+def _parse_instant(value: str) -> datetime.datetime:
+    dt = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return dt
+
+
+def _enrich_manifest_extensions(manifest: Dict[str, Any]) -> None:
+    """Normalize doctor_device source + temporary collection_window TTL."""
+    issued = manifest.get("issued_at")
+    anchor = _parse_instant(str(issued)) if issued else datetime.datetime.now(datetime.timezone.utc)
+
+    device = manifest.get("doctor_device")
+    if isinstance(device, dict):
+        device.setdefault("enabled", True)
+        paths = device.get("export_paths") or device.get("paths") or []
+        if isinstance(paths, str):
+            paths = [paths]
+        device["export_paths"] = [str(p) for p in paths]
+        manifest["doctor_device"] = device
+
+    window = manifest.get("collection_window")
+    if isinstance(window, dict):
+        window.setdefault("enabled", False)
+        if window.get("ttl") and not window.get("expires_at"):
+            start = window.get("started_at") or manifest.get("issued_at")
+            start_dt = _parse_instant(str(start)) if start else anchor
+            window["expires_at"] = _parse_ttl(str(window["ttl"]), start_dt).isoformat()
+        if window.get("expires_at") and not window.get("_expires_at"):
+            window["_expires_at"] = str(window["expires_at"])
+        manifest["collection_window"] = window
+
+
+def collection_window_active(manifest: Optional[Dict[str, Any]] = None) -> bool:
+    """True when doctor-prescribed device collection window is enabled and not expired."""
+    if os.getenv("VITASIDE_DEVICE_WINDOW_ACTIVE", "").strip().lower() in ("1", "true", "yes"):
+        return True
+    manifest = manifest or {}
+    window = manifest.get("collection_window") or {}
+    if not window.get("enabled"):
+        return False
+    expires = window.get("_expires_at") or window.get("expires_at")
+    if not expires:
+        return bool(window.get("active"))
+    try:
+        exp = _parse_instant(str(expires))
+        return datetime.datetime.now(datetime.timezone.utc) < exp
+    except ValueError:
+        return False
+
+
+def doctor_device_export_candidates(
+    vault: Path,
+    manifest: Optional[Dict[str, Any]] = None,
+) -> List[Path]:
+    """Resolve doctor_device export paths from manifest, env, and vault defaults."""
+    manifest = manifest or {}
+    vault_s = str(vault)
+    candidates: List[Path] = []
+
+    env_path = os.getenv("VITASIDE_DOCTOR_DEVICE_EXPORT", "").strip()
+    if env_path:
+        candidates.append(Path(env_path).expanduser())
+
+    device = manifest.get("doctor_device") or {}
+    if device.get("enabled", True):
+        for raw in device.get("export_paths") or []:
+            expanded = (
+                str(raw)
+                .replace("{{vault}}", vault_s)
+                .replace("${vault}", vault_s)
+            )
+            candidates.append(Path(os.path.expanduser(expanded)))
+
+    candidates.extend(
+        [
+            vault / "Doctor Device" / "export.csv",
+            vault / "Apple Health" / "export.xml",
+        ]
+    )
+    seen: set[str] = set()
+    ordered: List[Path] = []
+    for p in candidates:
+        key = str(p)
+        if key in seen or key == ".":
+            continue
+        seen.add(key)
+        ordered.append(p)
+    return ordered
 
 
 def is_expired(manifest: Dict[str, Any]) -> bool:

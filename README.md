@@ -46,6 +46,7 @@ Frame capture: `python frame/pair_and_test.py` → `python frame/runner.py`
 ## Key docs
 
 - [STATUS.md](STATUS.md) — frozen snapshot, tests, limitations
+- [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md) — **подключить агента (MCP) + что отправить по ссылке**
 - [docs/MVP-1.0.md](docs/MVP-1.0.md) — MVP definition
 - [code/health-mcp-starter/README.md](code/health-mcp-starter/README.md) — MCP tools + UI
 - [plan/DEPTH-ROADMAP.md](plan/DEPTH-ROADMAP.md) — future depth work

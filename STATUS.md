@@ -66,6 +66,10 @@ git add docs/ demo.html && git commit -m "docs: refresh GitHub Pages dashboard" 
 
 Uses `VITE_DEMO_LOCK=true` — rich sample data, no backend required.
 
+## Agent onboarding
+
+Share with MCP operators: [docs/AGENT-ONBOARDING.md](docs/AGENT-ONBOARDING.md)
+
 ---
 
 1. Read `plan/DEPTH-ROADMAP.md` for post-MVP ideas

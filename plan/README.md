@@ -1,6 +1,9 @@
 # Plan Directory — Status Dashboard
 
-**Last synced with code:** 2026-06-27 (post audit hardening)
+> **Project frozen (June 2026).** This folder is historical planning context.  
+> For current repo state see [../STATUS.md](../STATUS.md).
+
+**Last synced with code:** 2026-06-29 (unified + freeze)
 
 This folder follows the [agent-skills](https://github.com/addyosmani/agent-skills) lifecycle (`/spec`, `/plan`, `/build`, `/test`, `/review`, `/ship`). **Plans below are living docs** — when code ships, update the matching plan in the same PR/session.
 
@@ -54,7 +57,7 @@ This folder follows the [agent-skills](https://github.com/addyosmani/agent-skill
 
 ## Backlog (honest remaining work)
 
-Priority order for Phase 2+ (post-hackathon):
+**Frozen — not scheduled.** If the project resumes, start here:
 
 1. **Real data loop** — point `OMI_VAULT_PATH` at your vault; import Apple Health export; weekly ritual (human process, not code).
 2. **PDF export** — browser print CSS or weasyprint for doctor bundle.

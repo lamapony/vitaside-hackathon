@@ -22,10 +22,47 @@ from doctor_handoff_export import (  # noqa: E402
 
 @pytest.fixture(scope="module")
 def mcp_mod():
-    os.environ.setdefault("OMI_VAULT_PATH", str(ROOT / "demo-data" / "vault"))
-    os.environ.setdefault(
-        "VITASIDE_MANIFEST",
-        str(ROOT / "sidecars" / "sleep-stress-sidecar" / "manifest.yaml"),
+    demo_vault = ROOT / "demo-data" / "vault"
+    os.environ["OMI_VAULT_PATH"] = str(demo_vault)
+    manifest_path = ROOT / "sidecars" / "sleep-stress-sidecar" / "manifest.yaml"
+    os.environ["VITASIDE_MANIFEST"] = str(manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        f"""name: sleep-stress-sidecar
+version: "0.1"
+issuer: doctor@example.com
+ttl: 30d
+issued_at: "2026-06-28T00:00:00Z"
+allowed_scopes:
+  - path: "{demo_vault / '050 Daily Omi'}"
+    permissions: ["read"]
+doctor_device:
+  enabled: true
+  export_paths:
+    - "{{{{vault}}}}/Doctor Device/export.csv"
+collection_window:
+  enabled: true
+  ttl: 14d
+  started_at: "2026-06-28T00:00:00Z"
+tools:
+  - health_check
+  - analyze_lifestyle_patterns
+  - simulate_whatif
+  - generate_doctor_report
+  - build_visit_packet
+  - generate_visit_questions
+  - collaborative_insight
+  - find_correlation
+  - list_data_sources
+  - list_multi_sources
+  - monitor_device_window
+  - export_doctor_handoff_print
+quality_gates:
+  - always_include_confidence
+  - always_cite_sources
+  - include_disclaimer
+""",
+        encoding="utf-8",
     )
     spec = importlib.util.spec_from_file_location("vita_mcp", ROOT / "health-pattern-mcp.py")
     mod = importlib.util.module_from_spec(spec)

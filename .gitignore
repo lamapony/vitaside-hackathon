@@ -4,12 +4,14 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
 
 # Health data exports (never commit personal data)
 *apple_health_export*/
 export.xml
 *.audit.log
 audit.log
+research/out/
 
 # OS / editor
 .DS_Store
@@ -28,3 +30,10 @@ code/health-mcp-starter/ui/node_modules/
 code/health-mcp-starter/ui/dist/
 code/health-mcp-starter/local-data/
 code/health-mcp-starter/mcp-config.local.json
+
+# Internal agent planning (not part of product)
+vault/08-Planning/
+
+# Demo build artifacts
+node_modules/
+dist/

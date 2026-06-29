@@ -10,6 +10,8 @@ shift || true
 case "$cmd" in
   test)
     cd "$APP"
+    export OMI_VAULT_PATH="$APP/demo-data/vault"
+    export VITASIDE_MANIFEST="$APP/sidecars/sleep-stress-sidecar/manifest.yaml"
     # shellcheck disable=SC1091
     source "$APP/scripts/venv-python.sh"
     exec "$PYTHON" test_mvp.py "$@"

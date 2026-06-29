@@ -1,75 +1,53 @@
-# VitaSide — Local-First Health Intelligence Platform
+# VitaSide — Local-First Health Intelligence
 
-**Status:** MVP 1.0 + multi-source integration (unified branch)  
-**Live demo (static):** https://lamapony.github.io/vitaside-hackathon/  
-**Full platform:** `code/health-mcp-starter/` (MCP + React dashboard)
+> **Project status: Frozen (June 2026)**  
+> Hackathon + post-hackathon integration complete. Codebase is stable and tested locally.  
+> Not actively maintained. See [STATUS.md](STATUS.md) for the full handoff snapshot.
 
-VitaSide connects lifestyle signals from multiple local sources — Omi voice notes, Apple Health, Frame glasses vision capture, doctor-prescribed devices, and agent context — into doctor-ready summaries. All processing stays on device by default.
+Local-first personal agent: lifestyle signals from Omi notes, Apple Health, Frame glasses, doctor-prescribed devices, and agent context → pattern analysis with citations → doctor-ready summaries. **No cloud by default.**
 
-## Quick Start
+## Try it
 
-```bash
-cd code/health-mcp-starter
-./setup.sh
-python3 test_mvp.py        # acceptance tests
-./run-demo.sh              # full MVP flow
-./serve-ui.sh              # React dashboard → http://127.0.0.1:5173
-```
+| Mode | Command / link |
+|------|----------------|
+| **Verify** | `./scripts/vitaside test` |
+| **Full demo** | `cd code/health-mcp-starter && ./run-demo.sh` |
+| **Dashboard** | `cd code/health-mcp-starter && ./serve-ui.sh` → http://127.0.0.1:5173 |
+| **Static demo** | https://lamapony.github.io/vitaside-hackathon/ |
 
-From repo root: `./scripts/vitaside test`
+## Repo map
 
-## What's in this repo
+| Path | What |
+|------|------|
+| `code/health-mcp-starter/` | **Main platform** — MCP server, FastAPI, React UI, sidecar protocol |
+| `frame/` | Frame glasses BLE capture (Brilliant Labs) |
+| `vitaside/` | Vision lifestyle analyzer + local jsonl storage |
+| `data/` | Demo Frame capture events |
+| `docs/` | GitHub Pages + technical docs |
+| `research/` | Integration research notes |
+| `vault/` | Architecture, privacy contracts, pain points |
+| `plan/` | Sprint history + depth roadmap |
 
-| Area | Purpose |
-|---|---|
-| `code/health-mcp-starter/` | **Main platform** — 33 MCP tools, FastAPI, React UI, sidecar protocol |
-| `frame/` | Brilliant Labs Frame glasses BLE capture (from GitHub hackathon) |
-| `vitaside/` | Lightweight analyzer + local storage for Frame lifestyle events |
-| `data/` | Demo Frame capture events (for dashboard / GitHub Pages) |
-| `docs/` | GitHub Pages static demo + project docs |
-| `research/` | Frame integration research + factory notes |
-| `mcp/` | Frame glasses MCP stub (to be wired into main server) |
+## Data sources
 
-## Data sources (unified)
+Omi/Obsidian · Apple Health · Frame glasses · Doctor device window · Hermes agent context · Manual logs · Second-brain (Obsidian + mempalace)
 
-- **Omi / Obsidian** — daily voice journal notes
-- **Apple Health** — export.xml merge
-- **Frame glasses** — vision lifestyle tags via BLE capture
-- **Doctor device** — temporary prescribed sensor window
-- **Proactive agent** — Hermes context during collection
-- **Manual logs** — dashboard quick entries
-- **Second brain** — scoped Obsidian + mempalace read (VIT-27)
-
-## Real data
+## Real data (when resuming)
 
 ```bash
 export OMI_VAULT_PATH="~/Documents/Obsidian Vault"
+cd code/health-mcp-starter
 ./issue-sidecar.sh sleep-stress-sidecar
-python3 health-pattern-mcp.py
+./serve-ui.sh
 ```
 
-Frame capture:
-```bash
-python frame/pair_and_test.py   # pair glasses
-python frame/runner.py          # capture → ~/vitaside/data/
-```
+Frame capture: `python frame/pair_and_test.py` → `python frame/runner.py`
 
-## Docs
+## Key docs
 
-| Doc | Purpose |
-|---|---|
-| `docs/MVP-1.0.md` | What's shipped in MVP |
-| `code/health-mcp-starter/README.md` | MCP tools + UI setup |
-| `plan/README.md` | Status dashboard + backlog |
-| `research/vitaside-frame-integration.md` | Frame glasses integration notes |
-
-## Skin photo ABCDE check (optional)
-
-Descriptive image features only — **not a diagnosis, not a risk score**.
-
-- Local ABCDE-inspired observations (asymmetry, border contrast, colour variety, size in px)
-- Requires explicit `user_consent`; photo guide included in response
-- UI upload in Doctor Handoff tab with consent confirm + size limit (15 MB)
-- Tool: `analyze_skin_photo(image_path, user_consent, use_external)`
+- [STATUS.md](STATUS.md) — frozen snapshot, tests, limitations
+- [docs/MVP-1.0.md](docs/MVP-1.0.md) — MVP definition
+- [code/health-mcp-starter/README.md](code/health-mcp-starter/README.md) — MCP tools + UI
+- [plan/DEPTH-ROADMAP.md](plan/DEPTH-ROADMAP.md) — future depth work
 
 **Not a medical device.** Patterns for self-awareness and visit prep only.

@@ -1,2 +1,9 @@
+# Local overrides
 mcp-config.local.json
-# multi_source_collector.py  # move to proper location
+.venv/
+.pytest_cache/
+__pycache__/
+*.pyc
+audit.log
+out/
+local-data/

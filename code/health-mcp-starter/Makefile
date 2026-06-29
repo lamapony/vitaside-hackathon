@@ -14,7 +14,7 @@ deps:
 	$(PYTHON) -m pip install -q -r requirements.txt -r requirements-dev.txt
 
 issue-sidecars:
-	./issue-sidecar.sh sleep-stress-sidecar >/dev/null
+	OMI_VAULT_PATH="$(ROOT)/demo-data/vault" ./issue-sidecar.sh sleep-stress-sidecar >/dev/null
 
 pytest:
 	$(PYTHON) -m pytest tests/ -q \

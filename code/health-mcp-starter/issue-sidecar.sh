@@ -76,6 +76,18 @@ $AZURE_BLOCK
 allowed_scopes:
   - path: "$VAULT/050 Daily Omi"
     permissions: ["read"]
+
+doctor_device:
+  enabled: true
+  export_paths:
+    - "{{vault}}/Doctor Device/export.csv"
+    - "{{vault}}/Apple Health/export.xml"
+
+collection_window:
+  enabled: true
+  ttl: "14d"
+  started_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
 tools:
   - health_check
   - analyze_lifestyle_patterns
@@ -85,7 +97,10 @@ tools:
   - generate_visit_questions
   - collaborative_insight
   - find_correlation
-  - list_data_sources$EXTRA_TOOLS
+  - list_data_sources
+  - list_multi_sources
+  - monitor_device_window
+  - export_doctor_handoff_print$EXTRA_TOOLS
 quality_gates:
   - always_include_confidence
   - always_cite_sources

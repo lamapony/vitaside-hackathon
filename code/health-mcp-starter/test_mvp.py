@@ -24,6 +24,16 @@ def main() -> None:
     demo_vault = ROOT / "demo-data" / "vault"
     os.environ["OMI_VAULT_PATH"] = str(demo_vault)
     os.environ["VITASIDE_MANIFEST"] = str(ROOT / "sidecars/sleep-stress-sidecar/manifest.yaml")
+    import subprocess
+    if not (demo_vault / "050 Daily Omi" / "Conversations").exists():
+        subprocess.run([sys.executable, str(ROOT / "gen_demo_data.py")], cwd=ROOT, check=True)
+    subprocess.run(
+        ["bash", str(ROOT / "issue-sidecar.sh"), "sleep-stress-sidecar"],
+        cwd=ROOT,
+        env={**os.environ, "OMI_VAULT_PATH": str(demo_vault)},
+        check=True,
+        capture_output=True,
+    )
 
     spec = importlib.util.spec_from_file_location("vita", ROOT / "health-pattern-mcp.py")
     m = importlib.util.module_from_spec(spec)
